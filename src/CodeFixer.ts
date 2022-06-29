@@ -1,14 +1,14 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import { fixedFileDir, fixHistoryFile, getLocatorOrder } from "./FixHistory";
 import { LocatorCodeFragment } from "./MethodInvocationParser";
 import { GetElementByDriver, TargetDriver, TargetLocator } from "./Types";
 import { getCssSelector, getXpath } from "./WebDriverUtil";
 
-const dataDir = "./.multi-locator";
-
-type LocatorFix = {
+export type LocatorFix = {
   locatorCodeFragment: LocatorCodeFragment;
   brokenLocator: TargetLocator;
   correctValue: string;
+  time: number;
 };
 
 export class CodeFixer {
@@ -16,15 +16,15 @@ export class CodeFixer {
 
   public recordFix = async (): Promise<void> => {
     const sources = await this.getFixedSource();
-    await this.writeLocatorFix();
+    await this.writeFixHistory();
     sources.forEach(async (source, path) => {
       console.log(`
   file: ${path}
   source:`);
       console.log(source);
       const fileName = path.split("/").slice(-1);
-      await mkdir(`${dataDir}/fixed`, { recursive: true });
-      await writeFile(`${dataDir}/fixed/${fileName}`, source, "utf-8");
+      await mkdir(fixedFileDir, { recursive: true });
+      await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
     });
   };
 
@@ -54,6 +54,7 @@ export class CodeFixer {
         locatorCodeFragment,
         brokenLocator,
         correctValue,
+        time: Date.now(),
       };
       this._locatorFixes.push(locatorFix);
       showLocatorFix(locatorFix);
@@ -78,17 +79,15 @@ export class CodeFixer {
     return sources;
   };
 
-  private writeLocatorFix = async () => {
-    const filePath = `${dataDir}/fix_history.json`;
-    const content = await readFile(filePath, "utf-8").catch((e) => {
+  private writeFixHistory = async () => {
+    const content = await readFile(fixHistoryFile, "utf-8").catch((e) => {
       return "[]";
     });
     const json = JSON.parse(content);
-    this._locatorFixes.forEach((locatorFix: any) => {
-      locatorFix["time"] = Date.now();
+    this._locatorFixes.forEach((locatorFix: LocatorFix) => {
       json.push(locatorFix);
     });
-    await writeFile(filePath, JSON.stringify(json), "utf-8");
+    await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
   };
 
   private getBrokenLocatorCodeFragment = (

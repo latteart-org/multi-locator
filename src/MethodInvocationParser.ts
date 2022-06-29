@@ -12,7 +12,7 @@ export const parse = (
 export type LocatorCodeFragment = {
   file: string;
   type: CodeFragment;
-  value: CodeFragment;
+  value: CodeFragment; // includes surrounding symbols
 };
 
 // don't insert line breaks in strings of locator type or value
