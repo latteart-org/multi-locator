@@ -1,5 +1,10 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
-import { fixedFileDir, fixHistoryFile, getLocatorOrder } from "./FixHistory";
+import {
+  fixedFileDir,
+  fixHistoryFile,
+  calculateLocatorOrder,
+  locatorOrderFile,
+} from "./FixHistory";
 import { LocatorCodeFragment } from "./MethodInvocationParser";
 import { GetElementByDriver, TargetDriver, TargetLocator } from "./Types";
 import { getCssSelector, getXpath } from "./WebDriverUtil";
@@ -17,6 +22,7 @@ export class CodeFixer {
   public recordFix = async (): Promise<void> => {
     const sources = await this.getFixedSource();
     await this.writeFixHistory();
+    await this.writeLocatorOrder();
     sources.forEach(async (source, path) => {
       console.log(`
   file: ${path}
@@ -88,6 +94,12 @@ export class CodeFixer {
       json.push(locatorFix);
     });
     await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
+  };
+
+  private writeLocatorOrder = async () => {
+    const locatorOrder = await calculateLocatorOrder();
+    const list = locatorOrder.join("\n");
+    await writeFile(locatorOrderFile, list, "utf-8");
   };
 
   private getBrokenLocatorCodeFragment = (

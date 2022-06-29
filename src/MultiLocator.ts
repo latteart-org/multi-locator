@@ -8,6 +8,7 @@ import {
 } from "selenium-webdriver";
 import { Browser, Element } from "webdriverio";
 import { CodeFixer } from "./CodeFixer";
+import { readLocatorOrderFile } from "./FixHistory";
 import {
   InvocationInfo,
   LocatorCodeFragment,
@@ -105,9 +106,23 @@ const findElementAndRegisterFix = async <T extends TargetDriver>(
   maybeLocators: unknown[],
   strategy: FindElementStrategy<T>
 ): Promise<GetElementByDriver<T>> => {
-  const locators = maybeLocators.map(validateLocator);
+  const locatorOrder = await readLocatorOrderFile();
+  const locators = maybeLocators.map(validateLocator).sort((l1, l2) => {
+    const order1 = locatorOrder.get(l1.type);
+    const order2 = locatorOrder.get(l2.type);
+    if (order2 === undefined) {
+      return -1;
+    } else {
+      if (order1 === undefined) {
+        return 1;
+      } else {
+        return order1 - order2;
+      }
+    }
+  });
   const promises = strategy.getFindElementResults(locators, driver);
   const findElementResults = await Promise.allSettled(promises);
+
   const correctElement = findElementResults.find(
     strategy.isLocatorCorrect
   )?.value;
