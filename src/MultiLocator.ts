@@ -165,7 +165,7 @@ const toWdioCompatible = (locator: TargetLocator): string => {
     case "partialLinkText":
       return `*=${locator.value}`;
     case "innerText":
-      return `//*[=${locator.value}]`;
+      return `//*[text()='${locator.value}']`;
     case "partialInnerText":
       return `//*[contains(text(), '${locator.value}')]`;
     case "xpath":
@@ -187,7 +187,7 @@ const toSeleniumCompatible = (locator: TargetLocator): ByHash => {
     case "css":
       return { [locator.type]: locator.value } as ByHash;
     case "innerText":
-      return { xpath: `//*[=${locator.value}]` };
+      return { xpath: `//*[text()='${locator.value}']` };
     case "partialInnerText":
       return { xpath: `//*[contains(text(), '${locator.value}')]` };
     default:
