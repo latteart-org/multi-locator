@@ -1,13 +1,12 @@
 import { readFile } from "fs/promises";
 import {
-  ByHash,
   error,
   ThenableWebDriver,
   WebElement,
   WebElementPromise,
 } from "selenium-webdriver";
 import { Browser, Element } from "webdriverio";
-import { CodeFixer, getLocatorValue } from "./CodeFixer";
+import { CodeFixer } from "./CodeFixer";
 import { readLocatorOrderFile } from "./FixHistory";
 import {
   InvocationInfo,
@@ -21,6 +20,11 @@ import {
   TargetLocator,
   TargetLocatorTypes,
 } from "./Types";
+import {
+  findElementCommon,
+  toSeleniumCompatible,
+  toWdioCompatible,
+} from "./WebDriverUtil";
 
 export const findElementMultiSelenium = (
   driver: ThenableWebDriver,
@@ -46,7 +50,7 @@ export const findElementMultiSelenium = (
 
   return new WebElementPromise(
     driver,
-    findElementAndRegisterFix(
+    findElementAndRegisterLocatorFix(
       driver,
       invocationInfo,
       codeFixer,
@@ -77,7 +81,7 @@ export const findElementMultiWdio = async (
         result.reason.name === "invalid selector"),
   };
 
-  return findElementAndRegisterFix(
+  return findElementAndRegisterLocatorFix(
     driver,
     invocationInfo,
     codeFixer,
@@ -99,7 +103,23 @@ type FindElementStrategy<T extends TargetDriver> = {
   ) => boolean;
 };
 
-const findElementAndRegisterFix = async <T extends TargetDriver>(
+const compareLocator =
+  (locatorOrder: Map<string, number>) =>
+  (a: TargetLocator, b: TargetLocator) => {
+    const orderA = locatorOrder.get(a.type);
+    const orderB = locatorOrder.get(b.type);
+    if (orderB === undefined) {
+      return -1;
+    } else {
+      if (orderA === undefined) {
+        return 1;
+      } else {
+        return orderA - orderB;
+      }
+    }
+  };
+
+const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
   driver: T,
   invocationInfo: InvocationInfo,
   codeFixer: CodeFixer,
@@ -107,19 +127,9 @@ const findElementAndRegisterFix = async <T extends TargetDriver>(
   strategy: FindElementStrategy<T>
 ): Promise<GetElementByDriver<T>> => {
   const locatorOrder = await readLocatorOrderFile();
-  const locators = maybeLocators.map(validateLocator).sort((l1, l2) => {
-    const order1 = locatorOrder.get(l1.type);
-    const order2 = locatorOrder.get(l2.type);
-    if (order2 === undefined) {
-      return -1;
-    } else {
-      if (order1 === undefined) {
-        return 1;
-      } else {
-        return order1 - order2;
-      }
-    }
-  });
+  const locators = maybeLocators
+    .map(validateLocator)
+    .sort(compareLocator(locatorOrder));
   const promises = strategy.getFindElementResults(locators, driver);
   const findElementResults = await Promise.allSettled(promises);
 
@@ -143,7 +153,7 @@ const findElementAndRegisterFix = async <T extends TargetDriver>(
 
   if (brokenLocators.length !== 0) {
     const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
-    await codeFixer.registerFix(
+    await codeFixer.registerLocatorFix(
       driver,
       correctElement,
       brokenLocators,
@@ -154,47 +164,43 @@ const findElementAndRegisterFix = async <T extends TargetDriver>(
   return correctElement;
 };
 
-const toWdioCompatible = (locator: TargetLocator): string => {
-  switch (locator.type) {
-    case "id":
-      return `//*[@id="${locator.value}"]`;
-    case "name":
-      return `//*[@name="${locator.value}"]`;
-    case "linkText":
-      return `=${locator.value}`;
-    case "partialLinkText":
-      return `*=${locator.value}`;
-    case "innerText":
-      return `//*[text()='${locator.value}']`;
-    case "partialInnerText":
-      return `//*[contains(text(), '${locator.value}')]`;
-    case "xpath":
-    case "css":
-      return locator.value;
-    default:
-      const unreachable: never = locator.type;
-      return unreachable;
-  }
+export const findElementSelenium = (
+  driver: ThenableWebDriver,
+  invocationInfo: InvocationInfo,
+  codeFixer: CodeFixer,
+  maybeLocator: unknown
+): WebElementPromise => {
+  return new WebElementPromise(
+    driver,
+    findElementAndRegisterLocatorExtension(
+      driver,
+      invocationInfo,
+      codeFixer,
+      maybeLocator
+    )
+  );
 };
 
-const toSeleniumCompatible = (locator: TargetLocator): ByHash => {
-  switch (locator.type) {
-    case "id":
-    case "name":
-    case "linkText":
-    case "partialLinkText":
-    case "xpath":
-    case "css":
-      return { [locator.type]: locator.value } as ByHash;
-    case "innerText":
-      return { xpath: `//*[text()='${locator.value}']` };
-    case "partialInnerText":
-      return { xpath: `//*[contains(text(), '${locator.value}')]` };
-    default:
-      const unreachable: never = locator.type;
-      return unreachable;
-  }
+const findElementAndRegisterLocatorExtension = async <T extends TargetDriver>(
+  driver: T,
+  invocationInfo: InvocationInfo,
+  codeFixer: CodeFixer,
+  maybeLocator: unknown
+): Promise<GetElementByDriver<T>> => {
+  const locator = validateLocator(maybeLocator);
+  const correctElement = await findElementCommon(driver, locator);
+  const { argumentsCodeFragment, methodInvocationCodeFragment } =
+    await getCodeFragments(invocationInfo);
+  await codeFixer.registerLocatorExtension(
+    driver,
+    correctElement,
+    argumentsCodeFragment,
+    methodInvocationCodeFragment
+  );
+  return correctElement;
 };
+
+export const findElementWdio = findElementAndRegisterLocatorExtension;
 
 const getCodeFragments = async (
   invocationInfo: InvocationInfo
@@ -235,24 +241,4 @@ const validateLocator = (maybeLocator: unknown): TargetLocator => {
   const type = locator[0][0] as TargetLocator["type"];
   const value = locator[0][1];
   return { type, value };
-};
-
-export const extendLocator = async (
-  driver: ThenableWebDriver,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  maybeLocator: unknown
-  // strategy: FindElementStrategy<ThenableWebDriver>
-) => {
-  const locator = validateLocator(maybeLocator);
-  const element: WebElement = await driver.findElement(
-    toSeleniumCompatible(locator)
-  );
-  const extendedLocators: TargetLocator[] = [];
-  TargetLocatorTypes.forEach(async (type) => {
-    const value = await getLocatorValue(driver, element, type);
-    if (value !== null) {
-      extendedLocators.push({ type, value });
-    }
-  });
 };

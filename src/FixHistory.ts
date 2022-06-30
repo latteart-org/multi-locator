@@ -15,11 +15,11 @@ const getFixHistory = async (): Promise<LocatorFix[]> => {
 const getBreakageCount = async (): Promise<Map<string, number>> => {
   const fixHistory = await getFixHistory();
   return fixHistory.reduce((breakageCount, cur) => {
-    const count = breakageCount.get(cur.brokenLocator.type);
+    const count = breakageCount.get(cur.locatorCodeFragment.type.string);
     if (count === undefined) {
-      breakageCount.set(cur.brokenLocator.type, 1);
+      breakageCount.set(cur.locatorCodeFragment.type.string, 1);
     } else {
-      breakageCount.set(cur.brokenLocator.type, count + 1);
+      breakageCount.set(cur.locatorCodeFragment.type.string, count + 1);
     }
     return breakageCount;
   }, new Map<string, number>());

@@ -1,16 +1,25 @@
 import { CodeFixer } from "./CodeFixer";
 import { InvocationInfo } from "./MethodInvocationParser";
-import { findElementMultiSelenium, findElementMultiWdio } from "./MultiLocator";
+import {
+  findElementMultiSelenium,
+  findElementMultiWdio,
+  findElementSelenium,
+  findElementWdio,
+} from "./MultiLocator";
 import { GetElementPromiseByDriver, TargetDriver } from "./Types";
 import { isSelenium } from "./WebDriverUtil";
 
 export const enableFindElementMulti = (driver: TargetDriver): TargetDriver => {
   return isSelenium(driver)
-    ? new Proxy(driver, createDriverHandler(findElementMultiSelenium))
-    : new Proxy(driver, createDriverHandler(findElementMultiWdio));
+    ? new Proxy(
+        driver,
+        createDriverHandler(findElementMultiSelenium, findElementSelenium)
+      )
+    : new Proxy(
+        driver,
+        createDriverHandler(findElementMultiWdio, findElementWdio)
+      );
 };
-
-let codeFixer: CodeFixer | undefined = undefined;
 
 const createDriverHandler = <T extends TargetDriver>(
   findElementMulti: (
@@ -18,21 +27,27 @@ const createDriverHandler = <T extends TargetDriver>(
     invocationInfo: InvocationInfo,
     codeFixer: CodeFixer,
     ...locators: unknown[]
+  ) => GetElementPromiseByDriver<T>,
+  findElement: (
+    driver: T,
+    invocationInfo: InvocationInfo,
+    codeFixer: CodeFixer,
+    locator: unknown
   ) => GetElementPromiseByDriver<T>
 ): ProxyHandler<T> => {
+  let codeFixer: CodeFixer = new CodeFixer();
   return {
     get: (driver: T, prop, receiver) => {
       if (prop === "findElementMulti") {
         const invocationInfo = getInvocationInfo();
-        if (codeFixer === undefined) {
-          codeFixer = new CodeFixer();
-        }
         return findElementMulti.bind(null, driver, invocationInfo, codeFixer);
       }
       if (prop === "recordFix" && codeFixer !== undefined) {
         return codeFixer.recordFix;
       }
       if (prop === "findElement") {
+        const invocationInfo = getInvocationInfo();
+        return findElement.bind(null, driver, invocationInfo, codeFixer);
       }
       return Reflect.get(driver, prop, receiver);
     },

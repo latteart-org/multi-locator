@@ -6,16 +6,12 @@ export const parse = (
 ): ParsedCodeFragments => {
   const collector = new CodeFragmentsCollector(invocationCode, invocationInfo);
   collector.parseInvocation();
-  return {
-    methodInvocationCodeFragment: collector.methodInvocationCodeFragment,
-    argumentsCodeFragment: collector.argumentsCodeFragment,
-    locatorCodeFragments: collector.locatorCodeFragments,
-  };
+  return collector.codeFragments;
 };
 
 export type ParsedCodeFragments = {
   methodInvocationCodeFragment: CodeFragment;
-  argumentsCodeFragment: CodeFragment;
+  argumentsCodeFragment: CodeFragment; // suppose single line
   locatorCodeFragments: LocatorCodeFragment[];
 };
 
@@ -25,7 +21,7 @@ export type LocatorCodeFragment = {
 };
 
 // don't insert line breaks in strings of locator type or value
-type CodeFragment = {
+export type CodeFragment = {
   file: string;
   string: string;
   lineNum: number;
@@ -41,42 +37,29 @@ class CodeFragmentsCollector {
    * current index for "target" string
    */
   private _index: number;
-  private _file: string;
   private _lineNum: number;
   /**
    * current index in this line
    */
   private _at: number;
   private _codeFragmentsContainer: CodeFragmentsContainer;
-  private _methodInvocationCodeFragment: CodeFragment | undefined = undefined;
-  private _argumentsCodeFragment: CodeFragment | undefined = undefined;
 
   constructor(private _target: string, invocationInfo: InvocationInfo) {
     this._index = invocationInfo.at;
     this._lineNum = invocationInfo.lineNum;
     this._at = invocationInfo.at;
-    this._file = invocationInfo.file;
     this._codeFragmentsContainer = new CodeFragmentsContainer(
       invocationInfo.file
     );
   }
 
-  get locatorCodeFragments(): LocatorCodeFragment[] {
-    return this._codeFragmentsContainer.locatorCodeFragments;
-  }
-
-  get methodInvocationCodeFragment(): CodeFragment {
-    if (this._methodInvocationCodeFragment === undefined) {
-      throw new Error("undefined method invocation code");
-    }
-    return this._methodInvocationCodeFragment;
-  }
-
-  get argumentsCodeFragment(): CodeFragment {
-    if (this._argumentsCodeFragment === undefined) {
-      throw new Error("undefined arguments code");
-    }
-    return this._argumentsCodeFragment;
+  get codeFragments(): ParsedCodeFragments {
+    return {
+      locatorCodeFragments: this._codeFragmentsContainer.locatorCodeFragments,
+      argumentsCodeFragment: this._codeFragmentsContainer.argumentsCodeFragment,
+      methodInvocationCodeFragment:
+        this._codeFragmentsContainer.methodInvocationCodeFragment,
+    };
   }
 
   /**
@@ -91,20 +74,19 @@ class CodeFragmentsCollector {
    */
   public parseInvocation = () => {
     const start = this._index;
-    const startAt = this._at;
+    const startAt = this._at + 1;
     while (this.currentChar() !== "(") {
       this.nextSkipWhiteSpace();
     }
     const end = this._index;
-    const endAt = this._at;
+    const endAt = this._at + 1;
     const methodName = this._target.substring(start, end);
-    this._methodInvocationCodeFragment = {
-      string: methodName,
-      file: this._file,
-      lineNum: this._lineNum,
-      start: startAt,
-      end: endAt,
-    };
+    this._codeFragmentsContainer.registerMethodInvocation(
+      methodName,
+      this._lineNum,
+      startAt,
+      endAt
+    );
     this.parseArgument();
   };
 
@@ -130,23 +112,22 @@ class CodeFragmentsCollector {
   };
 
   private parseArgument = () => {
-    const start = this._index + 1;
-    const startAt = this._at + 1;
     if (this.currentChar() !== "(") {
       throw new Error("argument parse error");
     }
     this.nextSkipWhiteSpace();
+    const start = this._index;
+    const startAt = this._at + 1;
     this.parseLocators();
     const end = this._index;
-    const endAt = this._at;
+    const endAt = this._at + 1;
     const argumentsString = this._target.substring(start, end);
-    this._argumentsCodeFragment = {
-      string: argumentsString,
-      file: this._file,
-      lineNum: this._lineNum,
-      start: startAt,
-      end: endAt,
-    };
+    this._codeFragmentsContainer.registerArguments(
+      argumentsString,
+      this._lineNum,
+      startAt,
+      endAt
+    );
   };
 
   private parseLocators = () => {
@@ -191,7 +172,7 @@ class CodeFragmentsCollector {
       this.nextSkipWhiteSpace();
     }
     const locatorType = this._target.substring(start, end);
-    this._codeFragmentsContainer.pushLocatorType(
+    this._codeFragmentsContainer.registerLocatorType(
       locatorType,
       this._lineNum,
       startAt,
@@ -215,7 +196,7 @@ class CodeFragmentsCollector {
     const end = this._index + 1;
     const endAt = this._at + 1;
     const locatorValue = this._target.substring(start, end);
-    this._codeFragmentsContainer.pushLocatorValue(
+    this._codeFragmentsContainer.registerLocatorValue(
       locatorValue,
       this._lineNum,
       startAt,
@@ -228,16 +209,61 @@ class CodeFragmentsCollector {
 }
 
 class CodeFragmentsContainer {
+  private _methodInvocationCodeFragment: CodeFragment | undefined = undefined;
+  private _argumentsCodeFragment: CodeFragment | undefined = undefined;
   private _locatorCodeFragments: LocatorCodeFragment[] = [];
   private _tmpLocatorTypeCodeFragment: CodeFragment | undefined = undefined;
 
   constructor(private file: string) {}
 
+  get methodInvocationCodeFragment(): CodeFragment {
+    if (this._methodInvocationCodeFragment === undefined) {
+      throw new Error("undefined method invocation code");
+    }
+    return this._methodInvocationCodeFragment;
+  }
+
+  get argumentsCodeFragment(): CodeFragment {
+    if (this._argumentsCodeFragment === undefined) {
+      throw new Error("undefined arguments code");
+    }
+    return this._argumentsCodeFragment;
+  }
+
   get locatorCodeFragments(): LocatorCodeFragment[] {
     return this._locatorCodeFragments;
   }
 
-  public pushLocatorType = (
+  public registerMethodInvocation = (
+    string: string,
+    lineNum: number,
+    start: number,
+    end: number
+  ) => {
+    this._methodInvocationCodeFragment = {
+      string,
+      file: this.file,
+      lineNum,
+      start,
+      end,
+    };
+  };
+  public registerArguments = (
+    string: string,
+    lineNum: number,
+    start: number,
+    end: number
+  ) => {
+    this._argumentsCodeFragment = {
+      string,
+      file: this.file,
+      lineNum,
+      start,
+      end,
+    };
+  };
+
+  public registerLocatorType = (
     locatorType: string,
     lineNum: number,
     start: number,
@@ -252,7 +278,7 @@ class CodeFragmentsContainer {
     };
   };
 
-  public pushLocatorValue = (
+  public registerLocatorValue = (
     locatorValue: string,
     lineNum: number,
     start: number,
