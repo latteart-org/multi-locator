@@ -7,12 +7,12 @@ import {
   WebElementPromise,
 } from "selenium-webdriver";
 import { Browser, Element } from "webdriverio";
-import { CodeFixer } from "./CodeFixer";
+import { CodeFixer, getLocatorValue } from "./CodeFixer";
 import { readLocatorOrderFile } from "./FixHistory";
 import {
   InvocationInfo,
-  LocatorCodeFragment,
   parse,
+  ParsedCodeFragments,
 } from "./MethodInvocationParser";
 import {
   GetElementByDriver,
@@ -142,7 +142,7 @@ const findElementAndRegisterFix = async <T extends TargetDriver>(
   );
 
   if (brokenLocators.length !== 0) {
-    const locatorCodeFragments = await getLocatorCodeFragments(invocationInfo);
+    const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
     await codeFixer.registerFix(
       driver,
       correctElement,
@@ -196,9 +196,9 @@ const toSeleniumCompatible = (locator: TargetLocator): ByHash => {
   }
 };
 
-const getLocatorCodeFragments = async (
+const getCodeFragments = async (
   invocationInfo: InvocationInfo
-): Promise<LocatorCodeFragment[]> => {
+): Promise<ParsedCodeFragments> => {
   const { file, lineNum } = invocationInfo;
   const data = await readFile(file, "utf-8");
   const lines = data.split("\n");
@@ -235,4 +235,24 @@ const validateLocator = (maybeLocator: unknown): TargetLocator => {
   const type = locator[0][0] as TargetLocator["type"];
   const value = locator[0][1];
   return { type, value };
+};
+
+export const extendLocator = async (
+  driver: ThenableWebDriver,
+  invocationInfo: InvocationInfo,
+  codeFixer: CodeFixer,
+  maybeLocator: unknown
+  // strategy: FindElementStrategy<ThenableWebDriver>
+) => {
+  const locator = validateLocator(maybeLocator);
+  const element: WebElement = await driver.findElement(
+    toSeleniumCompatible(locator)
+  );
+  const extendedLocators: TargetLocator[] = [];
+  TargetLocatorTypes.forEach(async (type) => {
+    const value = await getLocatorValue(driver, element, type);
+    if (value !== null) {
+      extendedLocators.push({ type, value });
+    }
+  });
 };

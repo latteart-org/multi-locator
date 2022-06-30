@@ -32,6 +32,8 @@ const createDriverHandler = <T extends TargetDriver>(
       if (prop === "recordFix" && codeFixer !== undefined) {
         return codeFixer.recordFix;
       }
+      if (prop === "findElement") {
+      }
       return Reflect.get(driver, prop, receiver);
     },
   };

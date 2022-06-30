@@ -70,7 +70,7 @@ export class CodeFixer {
   private getFixedSource = async () => {
     const sources: Map<string, string> = new Map(); // file -> source
     for (const fix of this._locatorFixes) {
-      const file = fix.locatorCodeFragment.file;
+      const file = fix.locatorCodeFragment.type.file;
       const maybeSource = sources.get(file);
       const source: string =
         maybeSource === undefined ? await readFile(file, "utf-8") : maybeSource;
@@ -124,12 +124,12 @@ const showLocatorFix = (locatorFix: LocatorFix) => {
 broken locator:
   type: ${brokenLocator.type}
   value: ${brokenLocator.value}
-  file: ${locatorCodeFragment.file}
+  file: ${locatorCodeFragment.type.file}
   fix line ${locatorCodeFragment.value.lineNum} at ${locatorCodeFragment.value.start}--${locatorCodeFragment.value.end} to "${correctValue}"
 `);
 };
 
-const getLocatorValue = async <T extends TargetDriver>(
+export const getLocatorValue = async <T extends TargetDriver>(
   driver: T,
   element: GetElementByDriver<T>,
   type: TargetLocator["type"]
