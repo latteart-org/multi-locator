@@ -46,8 +46,3 @@ export const readLocatorOrderFile = async (): Promise<
     new Map<TargetLocator["type"], number>()
   );
 };
-
-// (async () => {
-//   console.log(await getBreakageCount());
-//   console.log(await getLocatorOrder());
-// })();

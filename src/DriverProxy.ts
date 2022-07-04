@@ -1,53 +1,53 @@
 import { CodeFixer } from "./CodeFixer";
 import { InvocationInfo } from "./MethodInvocationParser";
-import {
-  findElementMultiSelenium,
-  findElementMultiWdio,
-  findElementSelenium,
-  findElementWdio,
-} from "./MultiLocator";
-import { GetElementPromiseByDriver, TargetDriver } from "./Types";
+import { seleniumProxy } from "./proxy/SeleniumProxy";
+import { wdioProxy } from "./proxy/WdioProxy";
+import { FindElement, GetElementPromiseByDriver, TargetDriver } from "./Types";
 import { isSelenium } from "./WebDriverUtil";
 
-export const enableFindElementMulti = (driver: TargetDriver): TargetDriver => {
-  return isSelenium(driver)
-    ? new Proxy(
-        driver,
-        createDriverHandler(findElementMultiSelenium, findElementSelenium)
-      )
-    : new Proxy(
-        driver,
-        createDriverHandler(findElementMultiWdio, findElementWdio)
-      );
+export const enableMultiLocator = (driver: TargetDriver): TargetDriver => {
+  return isSelenium(driver) ? seleniumProxy(driver) : wdioProxy(driver);
 };
 
-const createDriverHandler = <T extends TargetDriver>(
+type OverriddenFunctions<T extends TargetDriver> = {
   findElementMulti: (
     driver: T,
     invocationInfo: InvocationInfo,
-    codeFixer: CodeFixer,
+    codeFixer: CodeFixer<T>,
     ...locators: unknown[]
-  ) => GetElementPromiseByDriver<T>,
+  ) => GetElementPromiseByDriver<T>;
+
   findElement: (
     driver: T,
     invocationInfo: InvocationInfo,
-    codeFixer: CodeFixer,
+    codeFixer: CodeFixer<T>,
+    findElement: FindElement<T>,
     locator: unknown
-  ) => GetElementPromiseByDriver<T>
+  ) => GetElementPromiseByDriver<T>;
+};
+
+export const createProxy = <T extends TargetDriver>(
+  driver: T,
+  overriddenFunctions: OverriddenFunctions<T>
+): T => new Proxy(driver, createProxyHandler(driver, overriddenFunctions));
+
+const createProxyHandler = <T extends TargetDriver>(
+  driver: T,
+  { findElement, findElementMulti }: OverriddenFunctions<T>
 ): ProxyHandler<T> => {
-  let codeFixer: CodeFixer = new CodeFixer();
+  let codeFixer: CodeFixer<T> = new CodeFixer<T>(driver);
   return {
     get: (driver: T, prop, receiver) => {
       if (prop === "findElementMulti") {
         const invocationInfo = getInvocationInfo();
         return findElementMulti.bind(null, driver, invocationInfo, codeFixer);
       }
-      if (prop === "recordFix" && codeFixer !== undefined) {
-        return codeFixer.recordFix;
-      }
       if (prop === "findElement") {
         const invocationInfo = getInvocationInfo();
         return findElement.bind(null, driver, invocationInfo, codeFixer);
+      }
+      if (prop === "recordFix") {
+        return codeFixer.recordFix;
       }
       return Reflect.get(driver, prop, receiver);
     },

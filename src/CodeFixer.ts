@@ -1,12 +1,13 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import {
+  calculateLocatorOrder,
   fixedFileDir,
   fixHistoryFile,
-  calculateLocatorOrder,
   locatorOrderFile,
 } from "./FixHistory";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
 import {
+  GetAwaitedElementByDriver,
   GetElementByDriver,
   TargetDriver,
   TargetLocator,
@@ -25,55 +26,47 @@ type LocatorExtension = {
   newArgumentsString: string;
 };
 
-export class CodeFixer {
+export class CodeFixer<T extends TargetDriver> {
   private readonly _locatorFixes: LocatorFix[] = [];
   private readonly _locatorExtensions: LocatorExtension[] = [];
   private readonly _methodInvocations: CodeFragment[] = [];
   private readonly _sources: Map<string, string> = new Map(); // file -> source
 
+  constructor(private readonly driver: T) {}
+
   public recordFix = async (): Promise<void> => {
     await this.applyLocatorFix();
     await this.applyLocatorExtension();
     await this.writeFixHistory();
-    await this.writeLocatorOrder();
-    this._sources.forEach(async (source, path) => {
-      console.log(`
-  file: ${path}
-  source:`);
-      console.log(source);
-      const fileName = path.split("/").slice(-1);
-      await mkdir(fixedFileDir, { recursive: true });
-      await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
-    });
+    await this.writeLocatorOrder(); // call it after writeFixHistory()
+    await this.writeFixedSource();
   };
 
-  public registerLocatorFix = async <T extends TargetDriver>(
-    driver: T,
-    element: GetElementByDriver<T>,
+  public registerLocatorFix = async (
+    element: GetAwaitedElementByDriver<T>,
     brokenLocators: TargetLocator[],
     locatorCodeFragments: LocatorCodeFragment[]
   ) => {
     for (const brokenLocator of brokenLocators) {
-      const maybeCorrectValue = await getLocatorValue(
-        driver,
+      const maybeCorrectValue = await this.getLocatorValue(
         element,
         brokenLocator.type
       );
 
       const correctValue =
-        maybeCorrectValue === null
-          ? `no '${brokenLocator.type}' in this element`
-          : maybeCorrectValue;
+        maybeCorrectValue ?? `no '${brokenLocator.type}' in this element`;
 
       const locatorCodeFragment = this.getBrokenLocatorCodeFragment(
         brokenLocator,
         locatorCodeFragments
       );
+
       const locatorFix: LocatorFix = {
         locatorCodeFragment,
         correctValue,
         time: Date.now(),
       };
+
       this._locatorFixes.push(locatorFix);
       this._locatorFixes.sort(this.compareLocatorFix);
       showLocatorFix(locatorFix);
@@ -97,16 +90,16 @@ export class CodeFixer {
     }
   };
 
-  public registerLocatorExtension = async <T extends TargetDriver>(
-    driver: T,
+  public registerLocatorExtension = async (
     element: GetElementByDriver<T>,
     argumentsCodeFragment: CodeFragment,
     methodInvocationCodeFragment: CodeFragment
   ) => {
     let newArgumentsString = "";
     for (const type of TargetLocatorTypes) {
-      const value = await getLocatorValue(driver, element, type);
-      if (value !== null) {
+      const value = await this.getLocatorValue(element, type);
+      console.log(value);
+      if (value !== undefined) {
         newArgumentsString += `{ ${type}: "${value}" }, `;
       }
     }
@@ -122,8 +115,7 @@ export class CodeFixer {
     for (const fix of this._locatorFixes) {
       const file = fix.locatorCodeFragment.type.file;
       const maybeSource = this._sources.get(file);
-      const source: string =
-        maybeSource === undefined ? await readFile(file, "utf-8") : maybeSource;
+      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
       const { lineNum, start, end } = fix.locatorCodeFragment.value;
       // correctValue not includes surrounding symbols
@@ -139,8 +131,7 @@ export class CodeFixer {
     for (const extension of this._locatorExtensions) {
       const file = extension.argumentsCodeFragment.file;
       const maybeSource = this._sources.get(file);
-      const source: string =
-        maybeSource === undefined ? await readFile(file, "utf-8") : maybeSource;
+      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
       const { lineNum, start, end } = extension.argumentsCodeFragment;
       lines[lineNum - 1] =
@@ -153,8 +144,7 @@ export class CodeFixer {
     // If more than one fixes is made on a single line, the fixes must be applied from behind.
     for (const { file, lineNum, start, end } of this._methodInvocations) {
       const maybeSource = this._sources.get(file);
-      const source: string =
-        maybeSource === undefined ? await readFile(file, "utf-8") : maybeSource;
+      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
       lines[lineNum - 1] =
         lines[lineNum - 1].slice(0, start - 1) +
@@ -181,6 +171,18 @@ export class CodeFixer {
     await writeFile(locatorOrderFile, list, "utf-8");
   };
 
+  private writeFixedSource = async () => {
+    this._sources.forEach(async (source, path) => {
+      console.log(`
+  file: ${path}
+  source:`);
+      console.log(source);
+      const fileName = path.split("/").slice(-1);
+      await mkdir(fixedFileDir, { recursive: true });
+      await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
+    });
+  };
+
   private getBrokenLocatorCodeFragment = (
     locator: TargetLocator,
     locatorCodeFragments: LocatorCodeFragment[]
@@ -195,6 +197,39 @@ export class CodeFixer {
     }
     throw new Error("fail to get locator code fragment");
   };
+
+  private getLocatorValue = async (
+    element: GetElementByDriver<T>,
+    type: TargetLocator["type"]
+  ): Promise<string | undefined> => {
+    const falsyToUndef = (value: string) =>
+      value === "" || value === null ? undefined : value;
+
+    switch (type) {
+      case "xpath":
+        return getXpath(this.driver, element);
+      case "id":
+      case "name": {
+        const value = await element.getAttribute(type);
+        return falsyToUndef(value);
+      }
+      case "linkText":
+      case "partialLinkText": {
+        const value = await element.getAttribute("text");
+        return falsyToUndef(value);
+      }
+      case "innerText":
+      case "partialInnerText": {
+        const value = await element.getText();
+        return falsyToUndef(value);
+      }
+      case "css":
+        return getCssSelector(this.driver, element);
+      default:
+        const unreachable: never = type;
+        return unreachable;
+    }
+  };
 }
 
 const showLocatorFix = (locatorFix: LocatorFix) => {
@@ -208,35 +243,4 @@ broken locator:
     locatorCodeFragment.value.start
   }--${locatorCodeFragment.value.end} to "${correctValue}"
 `);
-};
-
-const getLocatorValue = async <T extends TargetDriver>(
-  driver: T,
-  element: GetElementByDriver<T>,
-  type: TargetLocator["type"]
-): Promise<string | null> => {
-  switch (type) {
-    case "xpath":
-      return getXpath(driver, element);
-    case "id":
-    case "name": {
-      const value = await element.getAttribute(type);
-      return value === "" ? null : value;
-    }
-    case "linkText":
-    case "partialLinkText": {
-      const value = await element.getAttribute("text");
-      return value === "" ? null : value;
-    }
-    case "innerText":
-    case "partialInnerText": {
-      const value = await element.getText();
-      return value === "" ? null : value;
-    }
-    case "css":
-      return getCssSelector(driver, element);
-    default:
-      const unreachable: never = type;
-      return unreachable;
-  }
 };

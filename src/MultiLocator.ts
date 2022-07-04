@@ -1,11 +1,5 @@
 import { readFile } from "fs/promises";
-import {
-  error,
-  ThenableWebDriver,
-  WebElement,
-  WebElementPromise,
-} from "selenium-webdriver";
-import { Browser, Element } from "webdriverio";
+import { error } from "selenium-webdriver";
 import { CodeFixer } from "./CodeFixer";
 import { readLocatorOrderFile } from "./FixHistory";
 import {
@@ -14,93 +8,85 @@ import {
   ParsedCodeFragments,
 } from "./MethodInvocationParser";
 import {
-  GetElementByDriver,
-  GetElementPromiseByDriver,
+  FindElement,
+  GetAwaitedElementByDriver,
+  GetRawElementByDriver,
   TargetDriver,
   TargetLocator,
   TargetLocatorTypes,
 } from "./Types";
-import {
-  findElementCommon,
-  toSeleniumCompatible,
-  toWdioCompatible,
-} from "./WebDriverUtil";
 
-export const findElementMultiSelenium = (
-  driver: ThenableWebDriver,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  ...locators: unknown[]
-): WebElementPromise => {
-  const seleniumStrategy: FindElementStrategy<ThenableWebDriver> = {
-    getFindElementResults: (locators, driver) =>
-      locators.map((locator) =>
-        driver.findElement(toSeleniumCompatible(locator))
-      ),
-    isLocatorCorrect: (
-      result: PromiseSettledResult<WebElement>
-    ): result is PromiseFulfilledResult<WebElement> =>
-      result.status === "fulfilled",
-    isLocatorBroken: (result: PromiseSettledResult<WebElement>): boolean =>
-      result.status === "rejected" &&
-      ["InvalidSelectorError", "NoSuchElementError"].includes(
-        result.reason.name
-      ),
-  };
+export type LocatorCheck<T extends TargetDriver> = {
+  isCorrect: (
+    result: PromiseSettledResult<GetAwaitedElementByDriver<T>>
+  ) => result is PromiseFulfilledResult<GetAwaitedElementByDriver<T>>;
 
-  return new WebElementPromise(
-    driver,
-    findElementAndRegisterLocatorFix(
-      driver,
-      invocationInfo,
-      codeFixer,
-      locators,
-      seleniumStrategy
-    )
-  );
-};
-
-export const findElementMultiWdio = async (
-  driver: Browser<"async">,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  ...locators: unknown[]
-): Promise<Element<"async">> => {
-  const wdioStrategy: FindElementStrategy<Browser<"async">> = {
-    getFindElementResults: (locators, driver) =>
-      locators.map((locator) => driver.$(toWdioCompatible(locator))),
-    isLocatorCorrect: (
-      result: PromiseSettledResult<Element<"async">>
-    ): result is PromiseFulfilledResult<Element<"async">> =>
-      // fulfilled status doesn't always mean element was successfully specified.
-      result.status === "fulfilled" && result.value.error === undefined,
-    isLocatorBroken: (result: PromiseSettledResult<any>): boolean =>
-      (result.status === "fulfilled" &&
-        result.value.error?.error === "no such element") ||
-      (result.status === "rejected" &&
-        result.reason.name === "invalid selector"),
-  };
-
-  return findElementAndRegisterLocatorFix(
-    driver,
-    invocationInfo,
-    codeFixer,
-    locators,
-    wdioStrategy
-  );
-};
-
-type FindElementStrategy<T extends TargetDriver> = {
-  getFindElementResults: (
-    locator: TargetLocator[],
-    driver: T
-  ) => GetElementPromiseByDriver<T>[];
-  isLocatorCorrect: (
-    result: PromiseSettledResult<GetElementByDriver<T>>
-  ) => result is PromiseFulfilledResult<GetElementByDriver<T>>;
-  isLocatorBroken: (
-    result: PromiseSettledResult<GetElementByDriver<T>>
+  isBroken: (
+    result: PromiseSettledResult<GetAwaitedElementByDriver<T>>
   ) => boolean;
+};
+
+export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
+  invocationInfo: InvocationInfo,
+  codeFixer: CodeFixer<T>,
+  maybeLocators: unknown[],
+  findElement: FindElement<T>,
+  locatorCheck: LocatorCheck<T>
+): Promise<GetAwaitedElementByDriver<T>> => {
+  const locatorOrder = await readLocatorOrderFile();
+  const locators = maybeLocators
+    .map(validateLocator)
+    .sort(compareLocator(locatorOrder));
+  const promises = locators.map((locator) => findElement(locator));
+  const findElementResults = await Promise.allSettled(promises);
+
+  const correctElement = findElementResults.find(locatorCheck.isCorrect)?.value;
+  if (correctElement === undefined) {
+    throw new error.NoSuchElementError(
+      `Unable to locate element by any locators:` + JSON.stringify(locators)
+    );
+  }
+
+  const brokenLocators = findElementResults.reduce(
+    (brokenLocators: TargetLocator[], result, i) => {
+      if (locatorCheck.isBroken(result)) {
+        brokenLocators.push(locators[i]);
+      }
+      return brokenLocators;
+    },
+    []
+  );
+
+  if (brokenLocators.length !== 0) {
+    const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
+    await codeFixer.registerLocatorFix(
+      correctElement,
+      brokenLocators,
+      locatorCodeFragments
+    );
+  }
+
+  return correctElement;
+};
+
+export const findElementAndRegisterLocatorExtension = async <
+  T extends TargetDriver
+>(
+  invocationInfo: InvocationInfo,
+  codeFixer: CodeFixer<T>,
+  findElement: FindElement<T>,
+  maybeLocator: unknown
+): Promise<GetRawElementByDriver<T>> => {
+  const locator = validateLocator(maybeLocator);
+  const correctElement = await findElement(locator);
+  const { argumentsCodeFragment, methodInvocationCodeFragment } =
+    await getCodeFragments(invocationInfo);
+  await codeFixer.registerLocatorExtension(
+    correctElement,
+    argumentsCodeFragment,
+    methodInvocationCodeFragment
+  );
+  return correctElement;
 };
 
 const compareLocator =
@@ -118,89 +104,6 @@ const compareLocator =
       }
     }
   };
-
-const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
-  driver: T,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  maybeLocators: unknown[],
-  strategy: FindElementStrategy<T>
-): Promise<GetElementByDriver<T>> => {
-  const locatorOrder = await readLocatorOrderFile();
-  const locators = maybeLocators
-    .map(validateLocator)
-    .sort(compareLocator(locatorOrder));
-  const promises = strategy.getFindElementResults(locators, driver);
-  const findElementResults = await Promise.allSettled(promises);
-
-  const correctElement = findElementResults.find(
-    strategy.isLocatorCorrect
-  )?.value;
-  if (correctElement === undefined) {
-    throw new error.NoSuchElementError(
-      `Unable to locate element by any locators:` + JSON.stringify(locators)
-    );
-  }
-  const brokenLocators = findElementResults.reduce(
-    (brokenLocators: TargetLocator[], result, i) => {
-      if (strategy.isLocatorBroken(result)) {
-        brokenLocators.push(locators[i]);
-      }
-      return brokenLocators;
-    },
-    []
-  );
-
-  if (brokenLocators.length !== 0) {
-    const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
-    await codeFixer.registerLocatorFix(
-      driver,
-      correctElement,
-      brokenLocators,
-      locatorCodeFragments
-    );
-  }
-
-  return correctElement;
-};
-
-export const findElementSelenium = (
-  driver: ThenableWebDriver,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  maybeLocator: unknown
-): WebElementPromise => {
-  return new WebElementPromise(
-    driver,
-    findElementAndRegisterLocatorExtension(
-      driver,
-      invocationInfo,
-      codeFixer,
-      maybeLocator
-    )
-  );
-};
-
-const findElementAndRegisterLocatorExtension = async <T extends TargetDriver>(
-  driver: T,
-  invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer,
-  maybeLocator: unknown
-): Promise<GetElementByDriver<T>> => {
-  const locator = validateLocator(maybeLocator);
-  const correctElement = await findElementCommon(driver, locator);
-  const { argumentsCodeFragment, methodInvocationCodeFragment } =
-    await getCodeFragments(invocationInfo);
-  await codeFixer.registerLocatorExtension(
-    driver,
-    correctElement,
-    argumentsCodeFragment,
-    methodInvocationCodeFragment
-  );
-  return correctElement;
-};
-
-export const findElementWdio = findElementAndRegisterLocatorExtension;
 
 const getCodeFragments = async (
   invocationInfo: InvocationInfo

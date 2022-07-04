@@ -1,14 +1,32 @@
 import { ThenableWebDriver, WebElement } from "selenium-webdriver";
 import { Browser, Element } from "webdriverio";
 
-export type TargetDriver = ThenableWebDriver | Browser<"async">;
+export type SeleniumDriver = ThenableWebDriver;
+export type SeleniumElement = WebElement;
+export type WdioDriver = Browser<"async">;
+export type WdioElement = Element<"async">;
 
-export type GetElementPromiseByDriver<T extends TargetDriver> =
-  T extends ThenableWebDriver ? Promise<WebElement> : Promise<Element<"async">>;
+export type TargetDriver = SeleniumDriver | WdioDriver;
 
-export type GetElementByDriver<T extends TargetDriver> = Awaited<
+export type FindElement<T extends TargetDriver> = (
+  locator: TargetLocator
+) => GetElementPromiseByDriver<T>;
+
+export type GetRawElementByDriver<T> = T extends SeleniumDriver
+  ? SeleniumElement
+  : WdioElement;
+
+export type GetElementPromiseByDriver<T extends TargetDriver> = Promise<
+  GetRawElementByDriver<T>
+>;
+
+export type GetAwaitedElementByDriver<T extends TargetDriver> = Awaited<
   GetElementPromiseByDriver<T>
 >;
+
+export type GetElementByDriver<T extends TargetDriver> =
+  | GetRawElementByDriver<T>
+  | GetAwaitedElementByDriver<T>;
 
 export const TargetLocatorTypes = [
   "id",
