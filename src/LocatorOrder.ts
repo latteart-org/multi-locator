@@ -1,11 +1,8 @@
-import { readFile } from "fs/promises";
-import { LocatorFix } from "./CodeFixer";
+import { readFile, writeFile } from "fs/promises";
+import { dataDir, fixHistoryFile, LocatorFix } from "./CodeFixer";
 import { TargetLocator } from "./Types";
 
-const dataDir = ".multi-locator";
-export const fixHistoryFile = `${dataDir}/fix_history.json`;
-export const fixedFileDir = `${dataDir}/fixed`;
-export const locatorOrderFile = `${dataDir}/locator-order.config`;
+const locatorOrderFile = `${dataDir}/locator-order.config`;
 
 const getFixHistory = async (): Promise<LocatorFix[]> => {
   const data = await readFile(fixHistoryFile, "utf-8");
@@ -25,9 +22,7 @@ const getBreakageCount = async (): Promise<Map<string, number>> => {
   }, new Map<string, number>());
 };
 
-export const calculateLocatorOrder = async (): Promise<
-  TargetLocator["type"][]
-> => {
+const calculateLocatorOrder = async (): Promise<TargetLocator["type"][]> => {
   const breakageCount = await getBreakageCount();
   const locatorOrder = Array.from(breakageCount)
     .sort((a, b) => a[1] - b[1])
@@ -35,7 +30,7 @@ export const calculateLocatorOrder = async (): Promise<
   return locatorOrder;
 };
 
-export const readLocatorOrderFile = async (): Promise<
+export const readLocatorOrder = async (): Promise<
   Map<TargetLocator["type"], number>
 > => {
   const data = await readFile(locatorOrderFile, "utf-8");
@@ -45,4 +40,10 @@ export const readLocatorOrderFile = async (): Promise<
     },
     new Map<TargetLocator["type"], number>()
   );
+};
+
+export const writeLocatorOrder = async () => {
+  const locatorOrder = await calculateLocatorOrder();
+  const list = locatorOrder.join("\n");
+  await writeFile(locatorOrderFile, list, "utf-8");
 };

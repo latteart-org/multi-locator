@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import { error } from "selenium-webdriver";
 import { CodeFixer } from "./CodeFixer";
-import { readLocatorOrderFile } from "./FixHistory";
+import { readLocatorOrder } from "./LocatorOrder";
 import {
   InvocationInfo,
   parse,
@@ -33,7 +33,7 @@ export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
   findElement: FindElement<T>,
   locatorCheck: LocatorCheck<T>
 ): Promise<GetAwaitedElementByDriver<T>> => {
-  const locatorOrder = await readLocatorOrderFile();
+  const locatorOrder = await readLocatorOrder();
   const locators = maybeLocators
     .map(validateLocator)
     .sort(compareLocator(locatorOrder));

@@ -1,10 +1,5 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
-import {
-  calculateLocatorOrder,
-  fixedFileDir,
-  fixHistoryFile,
-  locatorOrderFile,
-} from "./FixHistory";
+import { writeLocatorOrder } from "./LocatorOrder";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
 import {
   GetAwaitedElementByDriver,
@@ -14,6 +9,10 @@ import {
   TargetLocatorTypes,
 } from "./Types";
 import { getCssSelector, getXpath } from "./WebDriverUtil";
+
+export const dataDir = ".multi-locator";
+const fixedFileDir = `${dataDir}/fixed`;
+export const fixHistoryFile = `${dataDir}/fix_history.json`;
 
 export type LocatorFix = {
   locatorCodeFragment: LocatorCodeFragment;
@@ -38,7 +37,7 @@ export class CodeFixer<T extends TargetDriver> {
     await this.applyLocatorFix();
     await this.applyLocatorExtension();
     await this.writeFixHistory();
-    await this.writeLocatorOrder(); // call it after writeFixHistory()
+    await writeLocatorOrder(); // call it after writeFixHistory()
     await this.writeFixedSource();
   };
 
@@ -163,12 +162,6 @@ export class CodeFixer<T extends TargetDriver> {
       json.push(locatorFix);
     });
     await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
-  };
-
-  private writeLocatorOrder = async () => {
-    const locatorOrder = await calculateLocatorOrder();
-    const list = locatorOrder.join("\n");
-    await writeFile(locatorOrderFile, list, "utf-8");
   };
 
   private writeFixedSource = async () => {
