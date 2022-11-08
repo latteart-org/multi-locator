@@ -97,7 +97,6 @@ export class CodeFixer<T extends TargetDriver> {
     let newArgumentsString = "";
     for (const type of TargetLocatorTypes) {
       const value = await this.getLocatorValue(element, type);
-      console.log(value);
       if (value !== undefined) {
         newArgumentsString += `{ ${type}: "${value}" }, `;
       }

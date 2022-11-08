@@ -44,7 +44,7 @@ class CodeFragmentsCollector {
   private _at: number;
   private _codeFragmentsContainer: CodeFragmentsContainer;
 
-  constructor(private _target: string, invocationInfo: InvocationInfo) {
+  constructor(private _invocationCode: string, invocationInfo: InvocationInfo) {
     this._index = invocationInfo.at;
     this._lineNum = invocationInfo.lineNum;
     this._at = invocationInfo.at;
@@ -74,13 +74,13 @@ class CodeFragmentsCollector {
    */
   public parseInvocation = () => {
     const start = this._index;
-    const startAt = this._at + 1;
+    const startAt = this._at;
     while (this.currentChar() !== "(") {
       this.nextSkipWhiteSpace();
     }
     const end = this._index;
-    const endAt = this._at + 1;
-    const methodName = this._target.substring(start, end);
+    const endAt = this._at;
+    const methodName = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerMethodInvocation(
       methodName,
       this._lineNum,
@@ -108,7 +108,7 @@ class CodeFragmentsCollector {
   };
 
   private currentChar = (): string => {
-    return this._target[this._index];
+    return this._invocationCode[this._index];
   };
 
   private parseArgument = () => {
@@ -117,14 +117,15 @@ class CodeFragmentsCollector {
     }
     this.nextSkipWhiteSpace();
     const start = this._index;
-    const startAt = this._at + 1;
+    const startAt = this._at;
+    const lineNum = this._lineNum;
     this.parseLocators();
     const end = this._index;
     const endAt = this._at + 1;
-    const argumentsString = this._target.substring(start, end);
+    const argumentsString = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerArguments(
       argumentsString,
-      this._lineNum,
+      lineNum,
       startAt,
       endAt
     );
@@ -171,7 +172,7 @@ class CodeFragmentsCollector {
     while (this.currentChar() !== ":") {
       this.nextSkipWhiteSpace();
     }
-    const locatorType = this._target.substring(start, end);
+    const locatorType = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerLocatorType(
       locatorType,
       this._lineNum,
@@ -195,7 +196,7 @@ class CodeFragmentsCollector {
     }
     const end = this._index + 1;
     const endAt = this._at + 1;
-    const locatorValue = this._target.substring(start, end);
+    const locatorValue = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerLocatorValue(
       locatorValue,
       this._lineNum,
@@ -248,6 +249,7 @@ class CodeFragmentsContainer {
       end,
     };
   };
+
   public registerArguments = (
     string: string,
     lineNum: number,
