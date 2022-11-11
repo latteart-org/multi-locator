@@ -2,6 +2,7 @@ node_modules
 dist
 .vscode
 mocha
+coverage
 test_experiment
 wdio.conf.js
 .DS_Store
