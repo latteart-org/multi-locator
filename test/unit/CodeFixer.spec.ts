@@ -1,6 +1,9 @@
-import { CodeFixer } from "../src/CodeFixer";
-import { SeleniumDriver, SeleniumElement, TargetLocator } from "../src/Types";
-import Rewire from "rewire";
+import { CodeFixer } from "../../src/CodeFixer";
+import {
+  SeleniumDriver,
+  SeleniumElement,
+  TargetLocator,
+} from "../../src/Types";
 
 let driver: any;
 // let rewiredCodeFixer: any;

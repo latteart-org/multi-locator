@@ -66,6 +66,6 @@ const getInvocationInfo = (): InvocationInfo => {
   return {
     file: result[1],
     lineNum: parseInt(result[2]),
-    at: parseInt(result[3]) - 1,
+    at: parseInt(result[3]),
   };
 };

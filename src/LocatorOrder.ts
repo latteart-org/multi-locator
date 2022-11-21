@@ -1,8 +1,7 @@
 import { readFile, writeFile } from "fs/promises";
-import { dataDir, fixHistoryFile, LocatorFix } from "./CodeFixer";
+import { LocatorFix } from "./CodeFixer";
+import { fixHistoryFile } from "./Constant";
 import { TargetLocator } from "./Types";
-
-const locatorOrderFile = `${dataDir}/locator-order.config`;
 
 const getFixHistory = async (): Promise<LocatorFix[]> => {
   const data = await readFile(fixHistoryFile, "utf-8");
@@ -30,9 +29,9 @@ const calculateLocatorOrder = async (): Promise<TargetLocator["type"][]> => {
   return locatorOrder;
 };
 
-export const readLocatorOrder = async (): Promise<
-  Map<TargetLocator["type"], number>
-> => {
+export const readLocatorOrder = async (
+  locatorOrderFile: string
+): Promise<Map<TargetLocator["type"], number>> => {
   const data = await readFile(locatorOrderFile, "utf-8");
   return (data.split("\n") as TargetLocator["type"][]).reduce(
     (map, type, order) => {
@@ -42,7 +41,7 @@ export const readLocatorOrder = async (): Promise<
   );
 };
 
-export const writeLocatorOrder = async () => {
+export const writeLocatorOrder = async (locatorOrderFile: string) => {
   const locatorOrder = await calculateLocatorOrder();
   const list = locatorOrder.join("\n");
   await writeFile(locatorOrderFile, list, "utf-8");

@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import { fixedFileDir, fixHistoryFile, locatorOrderFile } from "./Constant";
 import { writeLocatorOrder } from "./LocatorOrder";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
 import {
@@ -9,10 +10,6 @@ import {
   TargetLocatorTypes,
 } from "./Types";
 import { getCssSelector, getXpath } from "./WebDriverUtil";
-
-export const dataDir = ".multi-locator";
-const fixedFileDir = `${dataDir}/fixed`;
-export const fixHistoryFile = `${dataDir}/fix_history.json`;
 
 export type LocatorFix = {
   locatorCodeFragment: LocatorCodeFragment;
@@ -37,7 +34,7 @@ export class CodeFixer<T extends TargetDriver> {
     await this.applyLocatorFix();
     await this.applyLocatorExtension();
     await this.writeFixHistory();
-    await writeLocatorOrder(); // call it after writeFixHistory()
+    await writeLocatorOrder(locatorOrderFile); // call it after writeFixHistory()
     await this.writeFixedSource();
   };
 
@@ -53,7 +50,8 @@ export class CodeFixer<T extends TargetDriver> {
       );
 
       const correctValue =
-        maybeCorrectValue ?? `no '${brokenLocator.type}' in this element`;
+        maybeCorrectValue ??
+        `cannot generate '${brokenLocator.type}' locator for this element`;
 
       const locatorCodeFragment = this.getBrokenLocatorCodeFragment(
         brokenLocator,
@@ -96,6 +94,10 @@ export class CodeFixer<T extends TargetDriver> {
   ) => {
     let newArgumentsString = "";
     for (const type of TargetLocatorTypes) {
+      // not generate partial locator because they do not have a unique value.
+      if (["partialInnerText", "partialLinkText"].includes(type)) {
+        continue;
+      }
       const value = await this.getLocatorValue(element, type);
       if (value !== undefined) {
         newArgumentsString += `{ ${type}: "${value}" }, `;
@@ -132,10 +134,12 @@ export class CodeFixer<T extends TargetDriver> {
       const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
       const { lineNum, start, end } = extension.argumentsCodeFragment;
+      console.log(lines[lineNum - 1].slice(0, start));
+      console.log(lines[lineNum - 1].slice(end));
       lines[lineNum - 1] =
-        lines[lineNum - 1].slice(0, start - 1) +
+        lines[lineNum - 1].slice(0, start) +
         extension.newArgumentsString +
-        lines[lineNum - 1].slice(end - 1);
+        lines[lineNum - 1].slice(end);
       this._sources.set(file, lines.join("\n"));
     }
     // Do after methodInvocation fix.
@@ -144,6 +148,8 @@ export class CodeFixer<T extends TargetDriver> {
       const maybeSource = this._sources.get(file);
       const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
+      console.log(lines[lineNum - 1].slice(0, start - 1));
+      console.log(lines[lineNum - 1].slice(end - 1));
       lines[lineNum - 1] =
         lines[lineNum - 1].slice(0, start - 1) +
         "findElementMulti" +

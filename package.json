@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/DriverProxy.js",
   "scripts": {
-    "test": "ts-node node_modules/jest/bin/jest.js",
+    "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
+    "test:e2e": "ts-node node_modules/jest/bin/jest.js ./test/e2e",
     "tsc": "tsc",
     "wdio": "wdio run wdio.conf.js"
   },

@@ -79,8 +79,8 @@ class CodeFragmentsCollector {
       this.nextSkipWhiteSpace();
     }
     const end = this._index;
-    const endAt = this._at;
-    const methodName = this._invocationCode.substring(start, end);
+    const endAt = this._at + 1;
+    const methodName = this._invocationCode.substring(start - 1, end);
     this._codeFragmentsContainer.registerMethodInvocation(
       methodName,
       this._lineNum,
@@ -121,7 +121,7 @@ class CodeFragmentsCollector {
     const lineNum = this._lineNum;
     this.parseLocators();
     const end = this._index;
-    const endAt = this._at + 1;
+    const endAt = this._at;
     const argumentsString = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerArguments(
       argumentsString,
