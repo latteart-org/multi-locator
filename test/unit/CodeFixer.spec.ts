@@ -6,14 +6,8 @@ import {
 } from "../../src/Types";
 
 let driver: any;
-// let rewiredCodeFixer: any;
 
 describe("Test CodeFixer", () => {
-  beforeEach(async () => {
-    // rewiredCodeFixer = Rewire("../src/CodeFixer.ts").__get__("CodeFixer");
-    // driver = await new Builder().forBrowser("chrome").build();
-  });
-
   it("register fix for broken locator (id=username_broken)", async () => {
     const codeFixer = new CodeFixer<SeleniumDriver>(driver);
     const elementMock = {} as Awaited<Promise<SeleniumElement>>;
