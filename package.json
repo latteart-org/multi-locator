@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/DriverProxy.js",
+  "bin": {
+    "multi-locator": "dist/Command.js"
+  },
   "scripts": {
     "tsc": "tsc",
     "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
