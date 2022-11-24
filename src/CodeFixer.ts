@@ -159,9 +159,17 @@ export class CodeFixer<T extends TargetDriver> {
   };
 
   private writeFixHistory = async () => {
-    const content = await readFile(fixHistoryFile, "utf-8").catch((e) => {
-      return "[]";
-    });
+    const content = await readFile(fixHistoryFile, "utf-8")
+      .then((content) => {
+        if (content === "" || content === undefined) {
+          return "[]";
+        } else {
+          return content;
+        }
+      })
+      .catch((e) => {
+        return "[]";
+      });
     const json = JSON.parse(content);
     this._locatorFixes.forEach((locatorFix: LocatorFix) => {
       json.push(locatorFix);
