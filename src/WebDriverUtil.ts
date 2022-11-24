@@ -64,7 +64,6 @@ export const getCssSelector = async <T extends TargetDriver>(
   element: GetElementByDriver<T>
 ): Promise<string | undefined> => {
   const classString = await element.getAttribute("class");
-  console.log(classString);
   if (classString === null || classString === undefined || classString === "") {
     return undefined;
   }

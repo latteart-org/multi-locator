@@ -4,10 +4,11 @@
   "description": "",
   "main": "dist/DriverProxy.js",
   "scripts": {
-    "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
-    "test:e2e": "ts-node node_modules/jest/bin/jest.js ./test/e2e",
     "tsc": "tsc",
-    "wdio": "wdio run wdio.conf.js"
+    "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
+    "test:e2e": "npm run test:plain && npm run test:e2e:wdio",
+    "test:e2e:plain": "ts-node node_modules/jest/bin/jest.js ./test/e2e",
+    "test:e2e:wdio": "wdio run wdio.conf.js"
   },
   "author": "",
   "license": "ISC",

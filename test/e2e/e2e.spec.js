@@ -1,5 +1,5 @@
 const { Options } = require("selenium-webdriver/chrome");
-const { Builder } = require("selenium-webdriver");
+const { Builder, WebElement } = require("selenium-webdriver");
 const { enableMultiLocator } = require("../../dist/src/DriverProxy");
 
 jest.setTimeout(100000);
