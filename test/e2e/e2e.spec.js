@@ -1,6 +1,8 @@
 const { Options } = require("selenium-webdriver/chrome");
-const { Builder, WebElement } = require("selenium-webdriver");
+const { Builder } = require("selenium-webdriver");
 const { enableMultiLocator } = require("../../dist/src/DriverProxy");
+const { writeFile, readFile } = require("fs/promises");
+const { locatorOrderFile } = require("../../dist/src/Constant");
 
 jest.setTimeout(100000);
 
@@ -18,20 +20,21 @@ describe("end-to-end test", () => {
       .setChromeOptions(options)
       .build();
     driver = enableMultiLocator(driver);
+
+    await writeFile(locatorOrderFile, "name\ninnerText\ncss\nxpath\nid");
   });
 
   afterEach(async () => {
-    await driver.recordFix();
     await driver.quit();
   });
 
   it("test locator fix for plain selenium", async () => {
     const locatorFixTest = require("../resource/LocatorFixTest.js");
     await locatorFixTest(driver);
+    await driver.recordFix();
 
-    const fs = require("fs").promises;
-
-    const fixedScript = await fs.readFile(
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const fixedScript = await readFile(
       ".multi-locator/fixed/LocatorFixTest.js",
       "utf-8"
     );
@@ -64,10 +67,11 @@ module.exports = locatorFixTest;
   it("test locator extension for plain selenium", async () => {
     const locatorExtensionTest = require("../resource/LocatorExtensionTest.js");
     await locatorExtensionTest(driver);
+    await driver.recordFix();
 
-    const fs = require("fs").promises;
-
-    const fixedScript = await fs.readFile(
+    // If there is no wait, somehow the fixedScript becomes empty.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const fixedScript = await readFile(
       ".multi-locator/fixed/LocatorExtensionTest.js",
       "utf-8"
     );
@@ -79,6 +83,44 @@ module.exports = locatorFixTest;
 }
 
 module.exports = locatorExtensionTest;
+`);
+  });
+
+  it("test findElementMultiStrict for plain selenium", async () => {
+    const findElementMultiStrictTest = require("../resource/FindElementMultiStrictTest.js");
+    await findElementMultiStrictTest(driver);
+    await driver.recordFix();
+
+    // If there is no wait, somehow the fixedScript becomes empty.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const fixedScript = await readFile(
+      ".multi-locator/fixed/FindElementMultiStrictTest.js",
+      "utf-8"
+    );
+
+    expect(fixedScript)
+      .toBe(`async function findElementMultiStrictTest(driver) {
+  await driver.get("https://the-internet.herokuapp.com/login");
+  await driver
+    .findElementMultiStrict(
+      { id: "username" },
+      { xpath: '/html/body/div[2]/div/div/form/div[1]/div/input' },
+      { css: "cannot generate 'css' locator for this element" },
+      { name: "username" }
+    )
+    .sendKeys("tomsmith");
+  await driver
+    .findElementMultiStrict({ id: "password" })
+    .sendKeys("SuperSecretPassword!");
+  await driver
+    .findElementMultiStrict(
+      { innerText: "Login" },
+      { xpath: '//*[@id="login"]/button' }
+    )
+    .click();
+}
+
+module.exports = findElementMultiStrictTest;
 `);
   });
 });

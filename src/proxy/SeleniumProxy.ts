@@ -37,6 +37,7 @@ const findElementMulti = (
   driver: SeleniumDriver,
   invocationInfo: InvocationInfo,
   codeFixer: CodeFixer<SeleniumDriver>,
+  isApplyLocatorOrder: boolean,
   ...locators: unknown[]
 ): WebElementPromise => {
   return new WebElementPromise(
@@ -46,7 +47,8 @@ const findElementMulti = (
       codeFixer,
       locators,
       createFindElement(driver),
-      locatorCheck
+      locatorCheck,
+      isApplyLocatorOrder
     )
   );
 };

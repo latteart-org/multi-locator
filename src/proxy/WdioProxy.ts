@@ -32,6 +32,7 @@ const findElementMulti = async (
   driver: WdioDriver,
   invocationInfo: InvocationInfo,
   codeFixer: CodeFixer<WdioDriver>,
+  isApplyLocatorOrder: boolean,
   ...locators: unknown[]
 ): Promise<WdioElement> => {
   return findElementAndRegisterLocatorFix(
@@ -39,7 +40,8 @@ const findElementMulti = async (
     codeFixer,
     locators,
     createFindElement(driver),
-    locatorCheck
+    locatorCheck,
+    isApplyLocatorOrder
   );
 };
 

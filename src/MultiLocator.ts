@@ -32,12 +32,14 @@ export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
   codeFixer: CodeFixer<T>,
   maybeLocators: unknown[],
   findElement: FindElement<T>,
-  locatorCheck: LocatorCheck<T>
+  locatorCheck: LocatorCheck<T>,
+  isApplyLocatorOrder: boolean
 ): Promise<GetAwaitedElementByDriver<T>> => {
   const locatorOrder = await readLocatorOrder(locatorOrderFile);
-  const locators = maybeLocators
-    .map(validateLocator)
-    .sort(compareLocator(locatorOrder));
+  const validatedLocators = maybeLocators.map(validateLocator);
+  const locators = isApplyLocatorOrder
+    ? validatedLocators.sort(compareLocator(locatorOrder))
+    : validatedLocators;
   const promises = locators.map((locator) => findElement(locator));
   const findElementResults = await Promise.allSettled(promises);
 
@@ -48,15 +50,14 @@ export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
     );
   }
 
-  const brokenLocators = findElementResults.reduce(
-    (brokenLocators: TargetLocator[], result, i) => {
-      if (locatorCheck.isBroken(result)) {
-        brokenLocators.push(locators[i]);
-      }
-      return brokenLocators;
-    },
-    []
+  const shouldFixList: boolean[] = await Promise.all(
+    locators.map(
+      async (locator, i) =>
+        locatorCheck.isBroken(findElementResults[i]) ||
+        isDifferent(await findElement(locator), correctElement)
+    )
   );
+  const brokenLocators = locators.filter((_, i) => shouldFixList[i]);
 
   if (brokenLocators.length !== 0) {
     const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
@@ -88,6 +89,21 @@ export const findElementAndRegisterLocatorExtension = async <
     methodInvocationCodeFragment
   );
   return correctElement;
+};
+
+/**
+ * A lazy way to determine equivalence between elements
+ * @param maybeBroken
+ * @param correctElement
+ * @returns is equal or not
+ */
+const isDifferent = async <T extends TargetDriver>(
+  maybeBroken: GetRawElementByDriver<T>,
+  correctElement: Awaited<GetRawElementByDriver<T>>
+): Promise<boolean> => {
+  const a = await maybeBroken.getAttribute("outerHTML");
+  const b = await correctElement.getAttribute("outerHTML");
+  return a !== b;
 };
 
 const compareLocator =

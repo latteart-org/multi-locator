@@ -134,8 +134,6 @@ export class CodeFixer<T extends TargetDriver> {
       const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
       const { lineNum, start, end } = extension.argumentsCodeFragment;
-      console.log(lines[lineNum - 1].slice(0, start));
-      console.log(lines[lineNum - 1].slice(end));
       lines[lineNum - 1] =
         lines[lineNum - 1].slice(0, start) +
         extension.newArgumentsString +
@@ -148,8 +146,6 @@ export class CodeFixer<T extends TargetDriver> {
       const maybeSource = this._sources.get(file);
       const source: string = maybeSource ?? (await readFile(file, "utf-8"));
       const lines = source.split("\n");
-      console.log(lines[lineNum - 1].slice(0, start - 1));
-      console.log(lines[lineNum - 1].slice(end - 1));
       lines[lineNum - 1] =
         lines[lineNum - 1].slice(0, start - 1) +
         "findElementMulti" +

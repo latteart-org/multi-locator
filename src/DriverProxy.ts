@@ -14,6 +14,7 @@ type OverriddenFunctions<T extends TargetDriver> = {
     driver: T,
     invocationInfo: InvocationInfo,
     codeFixer: CodeFixer<T>,
+    isApplyLocatorOrder: boolean,
     ...locators: unknown[]
   ) => GetElementPromiseByDriver<T>;
 
@@ -40,7 +41,23 @@ const createProxyHandler = <T extends TargetDriver>(
     get: (driver: T, prop, receiver) => {
       if (prop === "findElementMulti") {
         const invocationInfo = getInvocationInfo();
-        return findElementMulti.bind(null, driver, invocationInfo, codeFixer);
+        return findElementMulti.bind(
+          null,
+          driver,
+          invocationInfo,
+          codeFixer,
+          true
+        );
+      }
+      if (prop === "findElementMultiStrict") {
+        const invocationInfo = getInvocationInfo();
+        return findElementMulti.bind(
+          null,
+          driver,
+          invocationInfo,
+          codeFixer,
+          false
+        );
       }
       if (prop === "findElement") {
         const invocationInfo = getInvocationInfo();

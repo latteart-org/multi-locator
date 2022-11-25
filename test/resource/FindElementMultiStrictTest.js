@@ -1,22 +1,22 @@
-async function locatorFixTest(driver) {
+async function findElementMultiStrictTest(driver) {
   await driver.get("https://the-internet.herokuapp.com/login");
   await driver
-    .findElementMulti(
-      { id: "password" },
-      { xpath: '//*[@id="username_broken"]' },
+    .findElementMultiStrict(
+      { id: "username" },
+      { xpath: '//*[@id="password"]' },
       { css: "#username_broken" },
-      { name: "username" }
+      { name: "password" }
     )
     .sendKeys("tomsmith");
   await driver
-    .findElementMulti({ id: "password" })
+    .findElementMultiStrict({ id: "password" })
     .sendKeys("SuperSecretPassword!");
   await driver
-    .findElementMulti(
+    .findElementMultiStrict(
       { innerText: "Log" },
       { xpath: '//*[@id="login"]/button' }
     )
     .click();
 }
 
-module.exports = locatorFixTest;
+module.exports = findElementMultiStrictTest;
