@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "fs/promises";
 import { LocatorFix } from "./CodeFixer";
-import { fixHistoryFile } from "./Constant";
+import { fixHistoryFile } from "./FilePathSetting";
 import { TargetLocator } from "./Types";
 
 const getFixHistory = async (): Promise<LocatorFix[]> => {

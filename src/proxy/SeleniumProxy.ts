@@ -23,12 +23,12 @@ const createFindElement: (
   driver.findElement(toSeleniumCompatible(locator));
 
 const locatorCheck: LocatorCheck<SeleniumDriver> = {
-  isCorrect: (
+  isFound: (
     result: PromiseSettledResult<SeleniumElement>
   ): result is PromiseFulfilledResult<SeleniumElement> =>
     result.status === "fulfilled",
 
-  isBroken: (result: PromiseSettledResult<SeleniumElement>): boolean =>
+  isNotFound: (result: PromiseSettledResult<SeleniumElement>): boolean =>
     result.status === "rejected" &&
     ["InvalidSelectorError", "NoSuchElementError"].includes(result.reason.name),
 };

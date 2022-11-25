@@ -16,13 +16,13 @@ const createFindElement: (driver: WdioDriver) => FindElement<WdioDriver> =
     driver.$(toWdioCompatible(locator));
 
 const locatorCheck: LocatorCheck<WdioDriver> = {
-  isCorrect: (
+  isFound: (
     result: PromiseSettledResult<WdioElement>
   ): result is PromiseFulfilledResult<WdioElement> =>
     // fulfilled status doesn't always mean element was successfully specified.
     result.status === "fulfilled" && result.value.error === undefined,
 
-  isBroken: (result: PromiseSettledResult<any>): boolean =>
+  isNotFound: (result: PromiseSettledResult<any>): boolean =>
     (result.status === "fulfilled" &&
       result.value.error?.error === "no such element") ||
     (result.status === "rejected" && result.reason.name === "invalid selector"),

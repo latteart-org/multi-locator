@@ -1,5 +1,9 @@
 import { readFile, writeFile } from "fs/promises";
-import { fixedFileDir, fixHistoryFile, locatorOrderFile } from "./Constant";
+import {
+  fixedFileDir,
+  fixHistoryFile,
+  locatorOrderFile,
+} from "./FilePathSetting";
 
 if (process.argv[2] === "show") {
   show(process.argv[3]);

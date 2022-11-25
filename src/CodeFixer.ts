@@ -1,5 +1,9 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
-import { fixedFileDir, fixHistoryFile, locatorOrderFile } from "./Constant";
+import {
+  fixedFileDir,
+  fixHistoryFile,
+  locatorOrderFile,
+} from "./FilePathSetting";
 import { writeLocatorOrder } from "./LocatorOrder";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
 import {
@@ -200,6 +204,12 @@ export class CodeFixer<T extends TargetDriver> {
     throw new Error("fail to get locator code fragment");
   };
 
+  /**
+   * Needs improvement as it does not consider uniqueness of elements
+   * @param element
+   * @param type
+   * @returns
+   */
   private getLocatorValue = async (
     element: GetElementByDriver<T>,
     type: TargetLocator["type"]

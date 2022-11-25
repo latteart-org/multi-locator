@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import { error } from "selenium-webdriver";
 import { CodeFixer } from "./CodeFixer";
-import { locatorOrderFile } from "./Constant";
+import { locatorOrderFile } from "./FilePathSetting";
 import { readLocatorOrder } from "./LocatorOrder";
 import {
   InvocationInfo,
@@ -18,11 +18,11 @@ import {
 } from "./Types";
 
 export type LocatorCheck<T extends TargetDriver> = {
-  isCorrect: (
+  isFound: (
     result: PromiseSettledResult<GetAwaitedElementByDriver<T>>
   ) => result is PromiseFulfilledResult<GetAwaitedElementByDriver<T>>;
 
-  isBroken: (
+  isNotFound: (
     result: PromiseSettledResult<GetAwaitedElementByDriver<T>>
   ) => boolean;
 };
@@ -43,21 +43,21 @@ export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
   const promises = locators.map((locator) => findElement(locator));
   const findElementResults = await Promise.allSettled(promises);
 
-  const correctElement = findElementResults.find(locatorCheck.isCorrect)?.value;
+  const correctElement = findElementResults.find(locatorCheck.isFound)?.value;
   if (correctElement === undefined) {
     throw new error.NoSuchElementError(
       `Unable to locate element by any locators:` + JSON.stringify(locators)
     );
   }
 
-  const shouldFixList: boolean[] = await Promise.all(
+  const fixFilter: boolean[] = await Promise.all(
     locators.map(
       async (locator, i) =>
-        locatorCheck.isBroken(findElementResults[i]) ||
+        locatorCheck.isNotFound(findElementResults[i]) ||
         isDifferent(await findElement(locator), correctElement)
     )
   );
-  const brokenLocators = locators.filter((_, i) => shouldFixList[i]);
+  const brokenLocators = locators.filter((_, i) => fixFilter[i]);
 
   if (brokenLocators.length !== 0) {
     const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
@@ -95,7 +95,7 @@ export const findElementAndRegisterLocatorExtension = async <
  * A lazy way to determine equivalence between elements
  * @param maybeBroken
  * @param correctElement
- * @returns is equal or not
+ * @returns is different or not
  */
 const isDifferent = async <T extends TargetDriver>(
   maybeBroken: GetRawElementByDriver<T>,
@@ -157,8 +157,8 @@ const validateLocator = (maybeLocator: unknown): TargetLocator => {
   if (!isLocator(maybeLocator)) {
     throw new Error('locator format error: locators should be {type: "value"}');
   }
-  const locator = Object.entries(maybeLocator);
-  const type = locator[0][0] as TargetLocator["type"];
-  const value = locator[0][1];
+  const locator = Object.entries(maybeLocator)[0];
+  const type = locator[0] as TargetLocator["type"];
+  const value = locator[1];
   return { type, value };
 };
