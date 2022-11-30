@@ -1,13 +1,6 @@
 import { CodeFixer } from "./CodeFixer";
 import { InvocationInfo } from "./MethodInvocationParser";
-import { seleniumProxy } from "./proxy/SeleniumProxy";
-import { wdioProxy } from "./proxy/WdioProxy";
 import { FindElement, GetElementPromiseByDriver, TargetDriver } from "./Types";
-import { isSelenium } from "./WebDriverUtil";
-
-export const enableMultiLocator = (driver: TargetDriver): TargetDriver => {
-  return isSelenium(driver) ? seleniumProxy(driver) : wdioProxy(driver);
-};
 
 type OverriddenFunctions<T extends TargetDriver> = {
   findElementMulti: (

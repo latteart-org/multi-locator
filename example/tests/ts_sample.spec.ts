@@ -14,7 +14,7 @@ describe("ts-jest examples", () => {
     await driver.quit();
   });
 
-  it.only("Fix locator sample", async () => {
+  it("Fix locator sample", async () => {
     await driver.get("https://the-internet.herokuapp.com/login");
     await driver
       .findElementMulti(

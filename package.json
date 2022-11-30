@@ -2,10 +2,13 @@
   "name": "multi-locator",
   "version": "1.0.0",
   "description": "",
-  "main": "./dist/src/DriverProxy.js",
+  "main": "./dist/src/Api.js",
   "bin": {
     "multi-locator": "./dist/src/Command.js"
   },
+  "files": [
+    "dist/src"
+  ],
   "scripts": {
     "tsc": "tsc -d",
     "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
@@ -31,7 +34,6 @@
     "@wdio/types": "^7.19.5",
     "chromedriver": "latest",
     "eslint-config-prettier": "^8.5.0",
-    "fs": "^0.0.1-security",
     "jest": "^28.1.3",
     "mocha": "^10.0.0",
     "rewire": "^6.0.0",
