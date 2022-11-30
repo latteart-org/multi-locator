@@ -1,13 +1,13 @@
 {
-  "name": "robust-locator",
+  "name": "multi-locator",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/DriverProxy.js",
+  "main": "./dist/src/DriverProxy.js",
   "bin": {
-    "multi-locator": "dist/Command.js"
+    "multi-locator": "./dist/src/Command.js"
   },
   "scripts": {
-    "tsc": "tsc",
+    "tsc": "tsc -d",
     "test": "ts-node node_modules/jest/bin/jest.js ./test/unit",
     "test:e2e": "npm run test:e2e:plain && npm run test:e2e:wdio",
     "test:e2e:plain": "ts-node node_modules/jest/bin/jest.js ./test/e2e",

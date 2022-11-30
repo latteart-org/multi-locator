@@ -1,10 +1,5 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
-import {
-  fixedFileDir,
-  fixHistoryFile,
-  locatorOrderFile,
-} from "./FilePathSetting";
-import { writeLocatorOrder } from "./LocatorOrder";
+import { fixedFileDir, fixHistoryFile } from "./FilePathSetting";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
 import {
   GetAwaitedElementByDriver,
@@ -38,7 +33,6 @@ export class CodeFixer<T extends TargetDriver> {
     await this.applyLocatorFix();
     await this.applyLocatorExtension();
     await this.writeFixHistory();
-    await writeLocatorOrder(locatorOrderFile); // call it after writeFixHistory()
     await this.writeFixedSource();
   };
 

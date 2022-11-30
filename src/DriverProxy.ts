@@ -72,11 +72,13 @@ const createProxyHandler = <T extends TargetDriver>(
 };
 
 /**
- * Be careful not to change stack trace
+ * Be careful not to change stack trace.
+ * Note that the stack trace format is different for test scripts in .js and .ts.
+ * Parentheses are included only for .js.
  */
 const getInvocationInfo = (): InvocationInfo => {
   const stack = new Error().stack!.split("\n")[3];
-  const result = /.+\((.+):(.+):(.+)\)/.exec(stack);
+  const result = /.+ \(*(.+):(.+):(.+)\)*/.exec(stack);
   if (result === null) {
     throw new Error("cannot get invocation info");
   }
