@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { mkdir, readFile, writeFile } from "fs/promises";
+import Log4js from "log4js";
 import {
   fixedFileDir,
   fixHistoryFile,
@@ -7,13 +8,32 @@ import {
 } from "./FilePathSetting";
 import { writeLocatorOrder } from "./LocatorOrder";
 
+Log4js.configure({
+  appenders: {
+    stdout: {
+      type: "stdout",
+      layout: {
+        type: "pattern",
+        pattern: "%m",
+      },
+    },
+  },
+  categories: {
+    default: {
+      appenders: ["stdout"],
+      level: "info",
+    },
+  },
+});
+
+const logger = Log4js.getLogger();
 if (process.argv[2] === "show") {
   if (process.argv[3] === "fix") {
     showFix(process.argv[4]);
   } else if (process.argv[3] === "order") {
     showOrder();
   } else {
-    console.error("Invalid argument: `muloc show (fix <file name> | order)");
+    logger.error("Invalid argument: `muloc show (fix <file name> | order)`");
   }
 } else if (process.argv[2] === "apply") {
   if (process.argv[3] === "fix") {
@@ -21,33 +41,33 @@ if (process.argv[2] === "show") {
   } else if (process.argv[3] === "order") {
     applyOrder();
   } else {
-    console.error("Invalid argument: `muloc apply (fix <file path> | order)");
+    logger.error("Invalid argument: `muloc apply (fix <file path> | order)`");
   }
 } else if (process.argv[2] === "clear") {
   clearFixHistory();
 } else {
   throw new Error(
-    "Invalid argument: `muloc (show <arguments> | apply <arguments> | clear)"
+    "Invalid argument: `muloc (show <arguments> | apply <arguments> | clear)`"
   );
 }
 
 async function showFix(fileName: string) {
   if (fileName === undefined) {
-    console.error("Specify file name");
+    logger.error("Specify file name");
     return;
   }
   await readFile(`${fixedFileDir}/${fileName}`, "utf-8")
     .then((fixedSource) => {
-      console.log(fixedSource);
+      logger.log(fixedSource);
     })
     .catch((error) => {
-      console.error(error);
+      logger.error(error);
     });
 }
 
 async function applyFix(filePath: string) {
   if (filePath === undefined) {
-    console.error("Specify file path");
+    logger.error("Specify file path");
     return;
   }
   const fileName = filePath.split("/").slice(-1);
@@ -56,7 +76,7 @@ async function applyFix(filePath: string) {
       await writeFile(filePath, fixedSource, "utf-8");
     })
     .catch((error) => {
-      console.error(error);
+      logger.error(error);
     });
 }
 
@@ -70,14 +90,14 @@ async function clearFixHistory() {
 async function showOrder() {
   await readFile(locatorOrderFile, "utf-8")
     .catch(() => {
-      console.error("No locator-order.config file");
-      console.error("Run some tests and execute `muloc order apply`");
+      logger.error("No locator-order.config file");
+      logger.error("Run some tests and execute `muloc order apply`");
     })
     .then((locatorOrder) => {
       if (locatorOrder === "") {
-        console.log("No locator order");
+        logger.info("No locator order");
       } else {
-        console.log(locatorOrder);
+        logger.info(locatorOrder);
       }
     });
 }

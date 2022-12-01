@@ -1,6 +1,8 @@
 import { Builder } from "selenium-webdriver";
 import { enableMultiLocator } from "multi-locator";
 
+jest.setTimeout(100000);
+
 describe("ts-jest examples", () => {
   let driver: any;
 

@@ -98,7 +98,7 @@ await driver.recordFix();
 
 ### Locator Prioritization
 
-`npx muloc apply order` generates `locator-order.config` that prioritizes more robust locator types based on the number of times the locator types has been modified in the past.  
+`npx muloc apply order` generates `locator-order.config` that prioritizes more robust locator types based on the number of times the locator types have been modified in the past.  
 Locator fix history is stored in `.multi-locator/fix_history.json`.
 
 `npx muloc show order` shows the order of the locator types described in the config file.  
@@ -107,7 +107,7 @@ Locator fix history is stored in `.multi-locator/fix_history.json`.
 ## for WebdriverIO
 
 It is almost the same as for Selenium WebDriver, but there are some differences in coding rule.  
-First, expand the `browser` or `driver` object to extend APIs.
+First, you need to extend the `browser` or `driver` object.
 
 ```js
 browser = enableMultiLocator(browser);
@@ -138,7 +138,7 @@ $(await browser.findElement({ id: "password" })).setValue(
 
 - `enableMultiLocator(<driver>|<browser>)`
 
-returns a extended driver so that the following functions can be available.
+returns an extended driver so that the following functions can be available.
 
 - `findElement({<locator type>: <locator value>})`
 

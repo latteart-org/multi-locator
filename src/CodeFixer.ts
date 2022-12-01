@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { fixedFileDir, fixHistoryFile } from "./FilePathSetting";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
+import Log4js from "log4js";
 import {
   GetAwaitedElementByDriver,
   GetElementByDriver,
@@ -173,10 +174,11 @@ export class CodeFixer<T extends TargetDriver> {
 
   private writeFixedSource = async () => {
     this._sources.forEach(async (source, path) => {
-      console.log(`
+      const logger = Log4js.getLogger();
+      logger.debug(`
   file: ${path}
   source:`);
-      console.log(source);
+      logger.debug(source);
       const fileName = path.split("/").slice(-1);
       await mkdir(fixedFileDir, { recursive: true });
       await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
@@ -240,7 +242,7 @@ export class CodeFixer<T extends TargetDriver> {
 
 const showLocatorFix = (locatorFix: LocatorFix) => {
   const { locatorCodeFragment, correctValue } = locatorFix;
-  console.log(`
+  Log4js.getLogger().debug(`
 broken locator:
   type: ${locatorCodeFragment.type.string}
   value: ${locatorCodeFragment.value.string.slice(1, -1)}

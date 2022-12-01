@@ -47,7 +47,7 @@ describe("jest examples", () => {
     await driver.findElement({ xpath: '//*[@id="login"]/button' }).click();
   });
 
-  it.only("Locator order sample", async () => {
+  it("Locator order sample", async () => {
     await mkdir("./.multi-locator", { recursive: true });
 
     // set locator priority "id -> name"
