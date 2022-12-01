@@ -1,6 +1,6 @@
 # MULOC: Introducing Multiple Locators for End-to-End Testing
 
-MULOC improves the robustness of test scripts by enabling the use of multiple locators in E2E testing libraries by extending their APIs.
+MULOC improves the robustness of test scripts by enabling the use of multiple locators in E2E testing libraries by extending their APIs.  
 MULOC now supports Selenium WebDriver and WebdriverIO, and we have confirmed that it works with Jest, ts-jest, and Mocha.
 
 # Features
@@ -12,7 +12,7 @@ MULOC now supports Selenium WebDriver and WebdriverIO, and we have confirmed tha
 
 # Usage
 
-See `example` for a complete usage example.
+See [here](https://github.com/latteart-org/multi-locator/tree/main/example/tests) for a complete usage example.
 
 ## for Selenium WebDriver
 
@@ -31,10 +31,10 @@ driver = enableMultiLocator(driver);
 
 ### Find Element by Multiple Locators
 
-You can use `findElementMulti()` instead of `findElement()` in Selenium.
-Arguments of `findElementMulti()` must be in hash format.
-`findElementMulti()` locates web elements by trying locators in the order specified in `.multi-locator/locator-order.config`.
-If a locator fails to locate a web element, the next locator is tried.
+You can use `findElementMulti()` instead of `findElement()` in Selenium.  
+Arguments of `findElementMulti()` must be in hash format.  
+`findElementMulti()` locates web elements by trying locators in the order specified in `.multi-locator/locator-order.config`.  
+If a locator fails to locate a web element, the next locator is tried.  
 If the configuration file does not exist, the locators are tried from the beginning of the argument.
 
 ```js
@@ -51,8 +51,8 @@ await driver
 
 ### Automatic Locator Repair
 
-Let's assume that an application update has broken some locators.
-Even in such a case, multiple locators enable you to identify a web element if any one of the locators is correct.
+Let's assume that an application update has broken some locators.  
+Even in such a case, multiple locators enable you to identify a web element if any one of the locators is correct.  
 By executing the following test, MULOC will record how the broken locators should be fixed.
 This requires calling `recordFix()` only once before finishing the test.
 
@@ -68,13 +68,13 @@ await driver
 await driver.recordFix(); // require
 ```
 
-Run `npx muloc show fix <file name>` after executing the test.
-Then the test script with the locators fixed will be output to your console.
+Run `npx muloc show fix <file name>` after executing the test.  
+Then the test script with the locators fixed will be output to your console.  
 If the fix is OK, you can apply it to the file with `npx muloc apply fix <file path>`.
 
 ### Automatic Locator Extension
 
-MULOC can convert test scripts using `findElement` to those using `findElementMulti`.
+MULOC can convert test scripts using `findElement` to those using `findElementMulti`.  
 It adds as many of the available locators as possible to the argument.
 
 ```js
@@ -98,16 +98,15 @@ await driver.recordFix();
 
 ### Locator Prioritization
 
-`npx muloc apply order` generates `locator-order.config` that prioritizes more robust locator types based on the number of times the locator types has been modified in the past.
+`npx muloc apply order` generates `locator-order.config` that prioritizes more robust locator types based on the number of times the locator types has been modified in the past.  
 Locator fix history is stored in `.multi-locator/fix_history.json`.
 
-`npx muloc show order` shows the order of the locator types described in the config file.
+`npx muloc show order` shows the order of the locator types described in the config file.  
 `npx muloc fix clear` clears the fix history.
 
 ## for WebdriverIO
 
-It is almost the same as for Selenium WebDriver, but there are some differences in coding rule.
-
+It is almost the same as for Selenium WebDriver, but there are some differences in coding rule.  
 First, expand the `browser` or `driver` object to extend APIs.
 
 ```js
@@ -115,7 +114,7 @@ browser = enableMultiLocator(browser);
 await browser.url("https://the-internet.herokuapp.com/login");
 ```
 
-Unlike in Selenium, it is not possible to chain `setValue()` or `click()` with the value returned by `findElementMulti` without resolving `Promise`.
+Unlike in Selenium, it is not possible to chain `setValue()` or `click()` with the value returned by `findElementMulti` without resolving `Promise`.  
 You must resolve the `Promise` or enclose it in `$()` before chaining the method.
 
 ```js
@@ -156,7 +155,7 @@ ignores the configured locator order and tries the locators from the beginning o
 
 - `recordFix()`
 
-Call this only once before finishing tests to record the modifications.
+Call this only once before finishing tests to record the modifications.  
 Repaired test scripts `.multi-locator/fixed/<file name>` and `fix_history.json` are generated.
 
 # Commands
