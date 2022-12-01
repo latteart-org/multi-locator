@@ -13,8 +13,8 @@ describe("jest examples", () => {
   });
 
   afterEach(async () => {
-    await driver.recordFix(); // add
     await driver.quit();
+    await driver.recordFix(); // add
   });
 
   it("Fix locator sample", async () => {
@@ -47,12 +47,12 @@ describe("jest examples", () => {
     await driver.findElement({ xpath: '//*[@id="login"]/button' }).click();
   });
 
-  it("Locator order sample", async () => {
-    await mkdir("./.multi-locator");
+  it.only("Locator order sample", async () => {
+    await mkdir("./.multi-locator", { recursive: true });
 
     // set locator priority "id -> name"
     await writeFile(
-      "./multi-locator/locator-order.config",
+      "./.multi-locator/locator-order.config",
       "id\nname",
       "utf-8"
     );

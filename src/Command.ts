@@ -7,29 +7,27 @@ import {
 } from "./FilePathSetting";
 import { writeLocatorOrder } from "./LocatorOrder";
 
-if (process.argv[2] === "fix") {
-  if (process.argv[3] === "show") {
+if (process.argv[2] === "show") {
+  if (process.argv[3] === "fix") {
     showFix(process.argv[4]);
-  } else if (process.argv[3] === "apply") {
-    applyFix(process.argv[4]);
-  } else if (process.argv[3] === "clear") {
-    clearFixHistory();
-  } else {
-    console.error(
-      "Invalid argument: `multi-locator fix (show <file name> | apply <file path> | clear)"
-    );
-  }
-} else if (process.argv[2] === "order") {
-  if (process.argv[3] === "show") {
+  } else if (process.argv[3] === "order") {
     showOrder();
-  } else if (process.argv[3] === "apply") {
+  } else {
+    console.error("Invalid argument: `muloc show (fix <file name> | order)");
+  }
+} else if (process.argv[2] === "apply") {
+  if (process.argv[3] === "fix") {
+    applyFix(process.argv[4]);
+  } else if (process.argv[3] === "order") {
     applyOrder();
   } else {
-    console.error("Invalid argument: `multi-locator order (show|apply)");
+    console.error("Invalid argument: `muloc apply (fix <file path> | order)");
   }
+} else if (process.argv[2] === "clear") {
+  clearFixHistory();
 } else {
   throw new Error(
-    "Invalid argument: `multi-locator (fix <command> | order <command>)"
+    "Invalid argument: `muloc (show <arguments> | apply <arguments> | clear)"
   );
 }
 
@@ -73,7 +71,7 @@ async function showOrder() {
   await readFile(locatorOrderFile, "utf-8")
     .catch(() => {
       console.error("No locator-order.config file");
-      console.error("Run some tests and execute `multi-locator order apply`");
+      console.error("Run some tests and execute `muloc order apply`");
     })
     .then((locatorOrder) => {
       if (locatorOrder === "") {

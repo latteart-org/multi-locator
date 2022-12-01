@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/src/Api.js",
   "bin": {
-    "multi-locator": "./dist/src/Command.js"
+    "muloc": "./dist/src/Command.js"
   },
   "files": [
     "dist/src"
