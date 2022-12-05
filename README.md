@@ -1,7 +1,7 @@
 # MULOC: Introducing Multiple Locators for End-to-End Testing
 
-MULOC improves the robustness of test scripts by enabling the use of multiple locators in E2E testing libraries by extending their APIs.  
-MULOC now supports Selenium WebDriver and WebdriverIO, and we have confirmed that it works with Jest, ts-jest, and Mocha.
+MULOC improves the robustness of test scripts by adding support for using multiple locators in E2E testing libraries through extended APIs.  
+MULOC currently supports Selenium WebDriver and WebdriverIO, and has been confirmed to work with Jest, ts-jest, and Mocha.
 
 # Features
 
@@ -51,10 +51,8 @@ await driver
 
 ### Automatic Locator Repair
 
-Let's assume that an application update has broken some locators.  
-Even in such a case, multiple locators enable you to identify a web element if any one of the locators is correct.  
-By executing the following test, MULOC will record how the broken locators should be fixed.
-This requires calling `recordFix()` only once before finishing the test.
+If an application update has caused some locators to break, multiple locators can still be used to identify a web element as long as at least one of the locators is correct.
+MULOC can be used to record the fixes for the broken locators by calling `recordFix()` once before the end of the test.
 
 ```js
 await driver
@@ -96,7 +94,7 @@ await driver
 await driver.recordFix();
 ```
 
-### Locator Prioritization
+### Automatic Locator Prioritization
 
 `npx muloc apply order` generates `locator-order.config` that prioritizes more robust locator types based on the number of times the locator types have been modified in the past.  
 Locator fix history is stored in `.multi-locator/fix_history.json`.
@@ -146,7 +144,7 @@ collects information to extend the locator in addition to the ordinary `findElem
 
 - `findElementMulti({<locator type>: <locator value>}, ...)`
 
-takes multiple locators as arguments and tries them in the order specified in the config file.
+takes multiple locators as arguments and tries them in the order specified in the config file.  
 If there is no config, this tries the locators sequentially, starting with the first locator in the argument.
 
 - `findElementMultiStrict({<locator type>: <locator value>}, ...)`
@@ -180,6 +178,35 @@ calculates the order of locators based on the content of `fix_history.json` and 
 
 clears `fix_history.json`.
 
+# Locator Type
+
+The following locators can be used:  
+`id`, `name`, `xpath`, `linkText`, `partialLinkText`, `innerText`, `partialInnerText`, `css`
+
 # Limitations
 
-TODO
+## Coding Style
+
+Please provide a locator as a string directly as an argument for `findElement()` or `findElementMulti()`.  
+Using a variable that contains a string representing the locator will not work correctly.
+
+```js
+// ok
+await driver.findElement({ id: "password" }).sendKeys("SuperSecretPassword!");
+
+// also ok
+const element = driver.findElement({ id: "password" })
+await element.sendKeys("sendKeys("SuperSecretPassword!")")
+
+// not work
+const locatorValue = "password";
+await driver.findElement({ id: `${locatorValue}` }).sendKeys("SuperSecretPassword!");
+
+// not work
+const locator = { id: "password" };
+await driver.findElement(locator).sendKeys("SuperSecretPassword!");
+```
+
+## Locator Type
+
+Currently, MULOC does not support specifying locators using methods like `By.id` or `By.css`.
