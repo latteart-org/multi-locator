@@ -70,6 +70,68 @@ describe("Test parse", () => {
       locatorCodeFragments: expectedLocatorCodeFragments,
     });
   });
+
+  it("Test parse invoked function call by in-line style", () => {
+    const invocationCode = `return driver.findElementMulti( { id: "username" }, { xpath: '//*[@id="username"]' });`;
+    const invocationInfo = { file: "test_script.js", lineNum: 10, at: 15 };
+    const codeFragments = parse(invocationCode, invocationInfo);
+
+    const locatorTypeFragment1 = {
+      file: "test_script.js",
+      string: "id",
+      lineNum: 10,
+      start: 35,
+      end: 37,
+    };
+
+    const locatorValueFragment1 = {
+      file: "test_script.js",
+      string: `"username"`,
+      lineNum: 10,
+      start: 39,
+      end: 49,
+    };
+
+    const locatorTypeFragment2 = {
+      file: "test_script.js",
+      string: "xpath",
+      lineNum: 10,
+      start: 55,
+      end: 60,
+    };
+
+    const locatorValueFragment2 = {
+      file: "test_script.js",
+      string: `'//*[@id="username"]'`,
+      lineNum: 10,
+      start: 62,
+      end: 83,
+    };
+
+    const expectedLocatorCodeFragments = [
+      { type: locatorTypeFragment1, value: locatorValueFragment1 },
+      { type: locatorTypeFragment2, value: locatorValueFragment2 },
+    ];
+    const expectedArgumentsCodeFragment = {
+      file: "test_script.js",
+      string: `{ id: "username" }, { xpath: '//*[@id="username"]' }`,
+      lineNum: 10,
+      start: 33,
+      end: 85,
+    };
+    const expectedMethodInvocationCodeFragment = {
+      file: "test_script.js",
+      string: "findElementMulti",
+      lineNum: 10,
+      start: 15,
+      end: 31,
+    };
+    expect(codeFragments).toEqual({
+      methodInvocationCodeFragment: expectedMethodInvocationCodeFragment,
+      argumentsCodeFragment: expectedArgumentsCodeFragment,
+      locatorCodeFragments: expectedLocatorCodeFragments,
+    });
+  });
 });
 
 describe("Test CodeFragmentsContainer", () => {

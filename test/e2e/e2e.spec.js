@@ -1,6 +1,6 @@
 const { Options } = require("selenium-webdriver/chrome");
 const { Builder } = require("selenium-webdriver");
-const { enableMultiLocator } = require("../../dist/src/DriverProxy");
+const { enableMultiLocator } = require("../../dist/src/Api");
 const { writeFile, readFile } = require("fs/promises");
 const { locatorOrderFile } = require("../../dist/src/Constant");
 

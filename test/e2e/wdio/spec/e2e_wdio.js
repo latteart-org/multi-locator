@@ -1,6 +1,6 @@
 const LoginPage = require("../pageobjects/login.page");
 const SecurePage = require("../pageobjects/secure.page");
-const { enableMultiLocator } = require("../../../../dist/src/DriverProxy");
+const { enableMultiLocator } = require("../../../../dist/src/Api");
 
 describe("e2e test with wdio", () => {
   before(async () => {

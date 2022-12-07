@@ -45,7 +45,7 @@ class CodeFragmentsCollector {
   private _codeFragmentsContainer: CodeFragmentsContainer;
 
   constructor(private _invocationCode: string, invocationInfo: InvocationInfo) {
-    this._index = invocationInfo.at;
+    this._index = invocationInfo.at - 1;
     this._lineNum = invocationInfo.lineNum;
     this._at = invocationInfo.at;
     this._codeFragmentsContainer = new CodeFragmentsContainer(
@@ -79,8 +79,8 @@ class CodeFragmentsCollector {
       this.nextSkipWhiteSpace();
     }
     const end = this._index;
-    const endAt = this._at + 1;
-    const methodName = this._invocationCode.substring(start - 1, end);
+    const endAt = this._at;
+    const methodName = this._invocationCode.substring(start, end);
     this._codeFragmentsContainer.registerMethodInvocation(
       methodName,
       this._lineNum,
