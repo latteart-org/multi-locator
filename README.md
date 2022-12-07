@@ -195,8 +195,8 @@ Using a variable that contains a string representing the locator will not work c
 await driver.findElement({ id: "password" }).sendKeys("SuperSecretPassword!");
 
 // also ok
-const element = driver.findElement({ id: "password" })
-await element.sendKeys("sendKeys("SuperSecretPassword!")")
+const element = driver.findElement({ id: "password" });
+await element.sendKeys("SuperSecretPassword!");
 
 // not work
 const locatorValue = "password";
