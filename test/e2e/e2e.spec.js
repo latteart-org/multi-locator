@@ -6,33 +6,49 @@ const { locatorOrderFile } = require("../../dist/src/Constant");
 
 jest.setTimeout(100000);
 
+async function init() {
+  const screen = {
+    width: 640,
+    height: 480,
+  };
+  const options = new Options().headless().windowSize(screen);
+  driver = await new Builder()
+    .forBrowser("chrome")
+    .setChromeOptions(options)
+    .build();
+  driver = enableMultiLocator(driver);
+
+  await writeFile(locatorOrderFile, "name\ninnerText\ncss\nxpath\nid");
+  return driver;
+}
+
 describe("end-to-end test", () => {
   let driver;
 
-  beforeEach(async () => {
-    const screen = {
-      width: 640,
-      height: 480,
-    };
-    const options = new Options().headless().windowSize(screen);
-    driver = await new Builder()
-      .forBrowser("chrome")
-      .setChromeOptions(options)
-      .build();
-    driver = enableMultiLocator(driver);
-
-    await writeFile(locatorOrderFile, "name\ninnerText\ncss\nxpath\nid");
-  });
-
-  afterEach(async () => {
+  beforeAll(async () => {
+    driver = await init();
+    const locatorFixTest = require("../resource/LocatorFixTest.js");
+    await locatorFixTest(driver);
     await driver.quit();
+
+    driver = await init();
+    const locatorFixInLineStyleTest = require("../resource/LocatorFixInLineStyleTest.js");
+    await locatorFixInLineStyleTest(driver);
+    await driver.quit();
+
+    driver = await init();
+    const locatorExtensionTest = require("../resource/LocatorExtensionTest.js");
+    await locatorExtensionTest(driver);
+    await driver.quit();
+
+    driver = await init();
+    const findElementMultiStrictTest = require("../resource/FindElementMultiStrictTest.js");
+    await findElementMultiStrictTest(driver);
+    await driver.quit();
+    await recordFix();
   });
 
   it("test locator fix for plain selenium", async () => {
-    const locatorFixTest = require("../resource/LocatorFixTest.js");
-    await locatorFixTest(driver);
-    await recordFix();
-
     const fixedScript = await readFile(
       ".multi-locator/fixed/LocatorFixTest.js",
       "utf-8"
@@ -64,10 +80,6 @@ module.exports = locatorFixTest;
   });
 
   it("test  in-line style locator fix for plain selenium", async () => {
-    const locatorFixInLineStyleTest = require("../resource/LocatorFixInLineStyleTest.js");
-    await locatorFixInLineStyleTest(driver);
-    await recordFix();
-
     const fixedScript = await readFile(
       ".multi-locator/fixed/LocatorFixInLineStyleTest.js",
       "utf-8"
@@ -85,10 +97,6 @@ module.exports = locatorFixInLineStyleTest;
   });
 
   it("test locator extension for plain selenium", async () => {
-    const locatorExtensionTest = require("../resource/LocatorExtensionTest.js");
-    await locatorExtensionTest(driver);
-    await recordFix();
-
     const fixedScript = await readFile(
       ".multi-locator/fixed/LocatorExtensionTest.js",
       "utf-8"
@@ -105,10 +113,6 @@ module.exports = locatorExtensionTest;
   });
 
   it("test findElementMultiStrict for plain selenium", async () => {
-    const findElementMultiStrictTest = require("../resource/FindElementMultiStrictTest.js");
-    await findElementMultiStrictTest(driver);
-    await recordFix();
-
     const fixedScript = await readFile(
       ".multi-locator/fixed/FindElementMultiStrictTest.js",
       "utf-8"
