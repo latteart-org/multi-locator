@@ -33,8 +33,10 @@ class Sources {
     return this._sources;
   }
 
-  public static entries() {
-    return this.sources.entries();
+  public static async forEachAsync(f: (file: string, source: string) => void) {
+    for (const [file, source] of this.sources) {
+      await f(file, source);
+    }
   }
 
   public static get(file: string): string | undefined {
@@ -50,7 +52,7 @@ class LocatorFixes {
   private static _locatorFixes: LocatorFix[];
   private constructor() {}
 
-  public static get() {
+  private static get locatorFixes() {
     if (this._locatorFixes === undefined) {
       this._locatorFixes = [];
     }
@@ -58,11 +60,17 @@ class LocatorFixes {
   }
 
   public static push(locatorFix: LocatorFix) {
-    this.get().push(locatorFix);
+    this.locatorFixes.push(locatorFix);
   }
 
   public static sort(f: (a: LocatorFix, b: LocatorFix) => number) {
-    this.get().sort(f);
+    this.locatorFixes.sort(f);
+  }
+
+  public static async forEachAsync(f: (locatorFix: LocatorFix) => void) {
+    for (const locatorFix of this.locatorFixes) {
+      await f(locatorFix);
+    }
   }
 }
 
@@ -70,15 +78,23 @@ class LocatorExtensions {
   private static _locatorExtensions: LocatorExtension[];
   private constructor() {}
 
-  public static get() {
+  private static get locatorExtensions() {
     if (this._locatorExtensions === undefined) {
       this._locatorExtensions = [];
     }
     return this._locatorExtensions;
   }
 
+  public static async forEachAsync(
+    f: (locatorExtension: LocatorExtension) => void
+  ) {
+    for (const locatorExtension of this.locatorExtensions) {
+      await f(locatorExtension);
+    }
+  }
+
   public static push(locatorExtension: LocatorExtension) {
-    this.get().push(locatorExtension);
+    this.locatorExtensions.push(locatorExtension);
   }
 }
 
@@ -86,7 +102,7 @@ class MethodInvocations {
   private static _methodInvocations: CodeFragment[];
   private constructor() {}
 
-  public static get() {
+  private static get methodInvocations() {
     if (this._methodInvocations === undefined) {
       this._methodInvocations = [];
     }
@@ -94,7 +110,15 @@ class MethodInvocations {
   }
 
   public static push(methodInvocation: CodeFragment) {
-    this.get().push(methodInvocation);
+    this.methodInvocations.push(methodInvocation);
+  }
+
+  public static async forEachAsync(
+    f: (methodInvocation: CodeFragment) => void
+  ) {
+    for (const methodInvocation of this.methodInvocations) {
+      await f(methodInvocation);
+    }
   }
 }
 
@@ -110,7 +134,7 @@ export class CodeFixWriter {
     Sources.get(file) ?? (await readFile(file, "utf-8"));
 
   private applyLocatorFix = async () => {
-    for (const fix of LocatorFixes.get()) {
+    await LocatorFixes.forEachAsync(async (fix) => {
       const file = fix.locatorCodeFragment.type.file;
       const source: string = await this.getSource(file);
       const lines = source.split("\n");
@@ -121,11 +145,11 @@ export class CodeFixWriter {
         fix.correctValue +
         lines[lineNum - 1].slice(end - 2);
       Sources.set(file, lines.join("\n"));
-    }
+    });
   };
 
   private applyLocatorExtension = async () => {
-    for (const extension of LocatorExtensions.get()) {
+    await LocatorExtensions.forEachAsync(async (extension) => {
       const file = extension.argumentsCodeFragment.file;
       const source: string = await this.getSource(file);
       const lines = source.split("\n");
@@ -135,18 +159,20 @@ export class CodeFixWriter {
         extension.newArgumentsString +
         lines[lineNum - 1].slice(end - 1);
       Sources.set(file, lines.join("\n"));
-    }
+    });
     // Do after methodInvocation fix.
     // If more than one fixes is made on a single line, the fixes must be applied from behind.
-    for (const { file, lineNum, start, end } of MethodInvocations.get()) {
-      const source: string = await this.getSource(file);
-      const lines = source.split("\n");
-      lines[lineNum - 1] =
-        lines[lineNum - 1].slice(0, start - 1) +
-        "findElementMulti" +
-        lines[lineNum - 1].slice(end - 1);
-      Sources.set(file, lines.join("\n"));
-    }
+    await MethodInvocations.forEachAsync(
+      async ({ file, lineNum, start, end }) => {
+        const source: string = await this.getSource(file);
+        const lines = source.split("\n");
+        lines[lineNum - 1] =
+          lines[lineNum - 1].slice(0, start - 1) +
+          "findElementMulti" +
+          lines[lineNum - 1].slice(end - 1);
+        Sources.set(file, lines.join("\n"));
+      }
+    );
   };
 
   private writeFixHistory = async () => {
@@ -162,14 +188,14 @@ export class CodeFixWriter {
         return "[]";
       });
     const json = JSON.parse(content);
-    for (const locatorFix of LocatorFixes.get()) {
+    await LocatorFixes.forEachAsync((locatorFix) => {
       json.push(locatorFix);
-    }
+    });
     await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
   };
 
   private writeFixedSource = async () => {
-    for (const [filePath, source] of Sources.entries()) {
+    await Sources.forEachAsync(async (filePath, source) => {
       const logger = Log4js.getLogger();
       logger.debug(`
   file: ${filePath}
@@ -178,7 +204,7 @@ export class CodeFixWriter {
       const fileName = filePath.split("/").slice(-1);
       await mkdir(fixedFileDir, { recursive: true });
       await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
-    }
+    });
   };
 }
 
