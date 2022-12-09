@@ -1,6 +1,6 @@
 import { readFile } from "fs/promises";
 import { error } from "selenium-webdriver";
-import { CodeFixer } from "./CodeFixer";
+import { CodeFixRegister } from "./CodeFixer";
 import { locatorOrderFile } from "./FilePathSetting";
 import { readLocatorOrder } from "./LocatorOrder";
 import {
@@ -29,7 +29,7 @@ export type LocatorCheck<T extends TargetDriver> = {
 
 export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<T>,
+  codeFixRegister: CodeFixRegister<T>,
   maybeLocators: unknown[],
   findElement: FindElement<T>,
   locatorCheck: LocatorCheck<T>,
@@ -61,7 +61,7 @@ export const findElementAndRegisterLocatorFix = async <T extends TargetDriver>(
 
   if (brokenLocators.length !== 0) {
     const { locatorCodeFragments } = await getCodeFragments(invocationInfo);
-    await codeFixer.registerLocatorFix(
+    await codeFixRegister.registerLocatorFix(
       correctElement,
       brokenLocators,
       locatorCodeFragments
@@ -75,7 +75,7 @@ export const findElementAndRegisterLocatorExtension = async <
   T extends TargetDriver
 >(
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<T>,
+  codeFixRegister: CodeFixRegister<T>,
   findElement: FindElement<T>,
   maybeLocator: unknown
 ): Promise<GetRawElementByDriver<T>> => {
@@ -83,7 +83,7 @@ export const findElementAndRegisterLocatorExtension = async <
   const correctElement = await findElement(locator);
   const { argumentsCodeFragment, methodInvocationCodeFragment } =
     await getCodeFragments(invocationInfo);
-  await codeFixer.registerLocatorExtension(
+  await codeFixRegister.registerLocatorExtension(
     correctElement,
     argumentsCodeFragment,
     methodInvocationCodeFragment

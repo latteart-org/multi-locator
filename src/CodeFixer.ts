@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import Log4js from "log4js";
 import { fixedFileDir, fixHistoryFile } from "./FilePathSetting";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
-import Log4js from "log4js";
 import {
   GetAwaitedElementByDriver,
   GetElementByDriver,
@@ -17,25 +17,173 @@ export type LocatorFix = {
   time: number;
 };
 
-type LocatorExtension = {
+export type LocatorExtension = {
   argumentsCodeFragment: CodeFragment;
   newArgumentsString: string;
 };
 
-export class CodeFixer<T extends TargetDriver> {
-  private readonly _locatorFixes: LocatorFix[] = [];
-  private readonly _locatorExtensions: LocatorExtension[] = [];
-  private readonly _methodInvocations: CodeFragment[] = [];
-  private readonly _sources: Map<string, string> = new Map(); // file -> source
+class Sources {
+  private static _sources: Map<string, string>; // file -> source
+  private constructor() {}
 
-  constructor(private readonly driver: T) {}
+  private static get sources() {
+    if (!this._sources) {
+      this._sources = new Map();
+    }
+    return this._sources;
+  }
 
+  public static entries() {
+    return this.sources.entries();
+  }
+
+  public static get(file: string): string | undefined {
+    return this.sources.get(file);
+  }
+
+  public static set(file: string, source: string) {
+    this.sources.set(file, source);
+  }
+}
+
+class LocatorFixes {
+  private static _locatorFixes: LocatorFix[];
+  private constructor() {}
+
+  public static get() {
+    if (this._locatorFixes === undefined) {
+      this._locatorFixes = [];
+    }
+    return this._locatorFixes;
+  }
+
+  public static push(locatorFix: LocatorFix) {
+    this.get().push(locatorFix);
+  }
+
+  public static sort(f: (a: LocatorFix, b: LocatorFix) => number) {
+    this.get().sort(f);
+  }
+}
+
+class LocatorExtensions {
+  private static _locatorExtensions: LocatorExtension[];
+  private constructor() {}
+
+  public static get() {
+    if (this._locatorExtensions === undefined) {
+      this._locatorExtensions = [];
+    }
+    return this._locatorExtensions;
+  }
+
+  public static push(locatorExtension: LocatorExtension) {
+    this.get().push(locatorExtension);
+  }
+}
+
+class MethodInvocations {
+  private static _methodInvocations: CodeFragment[];
+  private constructor() {}
+
+  public static get() {
+    if (this._methodInvocations === undefined) {
+      this._methodInvocations = [];
+    }
+    return this._methodInvocations;
+  }
+
+  public static push(methodInvocation: CodeFragment) {
+    this.get().push(methodInvocation);
+  }
+}
+
+export class CodeFixWriter {
   public recordFix = async (): Promise<void> => {
     await this.applyLocatorFix();
     await this.applyLocatorExtension();
     await this.writeFixHistory();
     await this.writeFixedSource();
   };
+
+  private getSource = async (file: string) =>
+    Sources.get(file) ?? (await readFile(file, "utf-8"));
+
+  private applyLocatorFix = async () => {
+    for (const fix of LocatorFixes.get()) {
+      const file = fix.locatorCodeFragment.type.file;
+      const source: string = await this.getSource(file);
+      const lines = source.split("\n");
+      const { lineNum, start, end } = fix.locatorCodeFragment.value;
+      // correctValue not includes surrounding symbols
+      lines[lineNum - 1] =
+        lines[lineNum - 1].slice(0, start) +
+        fix.correctValue +
+        lines[lineNum - 1].slice(end - 2);
+      Sources.set(file, lines.join("\n"));
+    }
+  };
+
+  private applyLocatorExtension = async () => {
+    for (const extension of LocatorExtensions.get()) {
+      const file = extension.argumentsCodeFragment.file;
+      const source: string = await this.getSource(file);
+      const lines = source.split("\n");
+      const { lineNum, start, end } = extension.argumentsCodeFragment;
+      lines[lineNum - 1] =
+        lines[lineNum - 1].slice(0, start - 1) +
+        extension.newArgumentsString +
+        lines[lineNum - 1].slice(end - 1);
+      Sources.set(file, lines.join("\n"));
+    }
+    // Do after methodInvocation fix.
+    // If more than one fixes is made on a single line, the fixes must be applied from behind.
+    for (const { file, lineNum, start, end } of MethodInvocations.get()) {
+      const source: string = await this.getSource(file);
+      const lines = source.split("\n");
+      lines[lineNum - 1] =
+        lines[lineNum - 1].slice(0, start - 1) +
+        "findElementMulti" +
+        lines[lineNum - 1].slice(end - 1);
+      Sources.set(file, lines.join("\n"));
+    }
+  };
+
+  private writeFixHistory = async () => {
+    const content = await readFile(fixHistoryFile, "utf-8")
+      .then((content) => {
+        if (content === "" || content === undefined) {
+          return "[]";
+        } else {
+          return content;
+        }
+      })
+      .catch((e) => {
+        return "[]";
+      });
+    const json = JSON.parse(content);
+    for (const locatorFix of LocatorFixes.get()) {
+      json.push(locatorFix);
+    }
+    await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
+  };
+
+  private writeFixedSource = async () => {
+    for (const [filePath, source] of Sources.entries()) {
+      const logger = Log4js.getLogger();
+      logger.debug(`
+  file: ${filePath}
+  source:`);
+      logger.debug(source);
+      const fileName = filePath.split("/").slice(-1);
+      await mkdir(fixedFileDir, { recursive: true });
+      await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
+    }
+  };
+}
+
+export class CodeFixRegister<T extends TargetDriver> {
+  constructor(private readonly driver: T) {}
 
   public registerLocatorFix = async (
     element: GetAwaitedElementByDriver<T>,
@@ -63,8 +211,8 @@ export class CodeFixer<T extends TargetDriver> {
         time: Date.now(),
       };
 
-      this._locatorFixes.push(locatorFix);
-      this._locatorFixes.sort(this.compareLocatorFix);
+      LocatorFixes.push(locatorFix);
+      LocatorFixes.sort(this.compareLocatorFix);
       showLocatorFix(locatorFix);
     }
   };
@@ -106,83 +254,8 @@ export class CodeFixer<T extends TargetDriver> {
       argumentsCodeFragment,
       newArgumentsString: newArgumentsString.slice(0, -2), // remove trailing comma
     };
-    this._locatorExtensions.push(locatorExtension);
-    this._methodInvocations.push(methodInvocationCodeFragment);
-  };
-
-  private applyLocatorFix = async () => {
-    for (const fix of this._locatorFixes) {
-      const file = fix.locatorCodeFragment.type.file;
-      const maybeSource = this._sources.get(file);
-      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
-      const lines = source.split("\n");
-      const { lineNum, start, end } = fix.locatorCodeFragment.value;
-      // correctValue not includes surrounding symbols
-      lines[lineNum - 1] =
-        lines[lineNum - 1].slice(0, start) +
-        fix.correctValue +
-        lines[lineNum - 1].slice(end - 2);
-      this._sources.set(file, lines.join("\n"));
-    }
-  };
-
-  private applyLocatorExtension = async () => {
-    for (const extension of this._locatorExtensions) {
-      const file = extension.argumentsCodeFragment.file;
-      const maybeSource = this._sources.get(file);
-      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
-      const lines = source.split("\n");
-      const { lineNum, start, end } = extension.argumentsCodeFragment;
-      lines[lineNum - 1] =
-        lines[lineNum - 1].slice(0, start) +
-        extension.newArgumentsString +
-        lines[lineNum - 1].slice(end);
-      this._sources.set(file, lines.join("\n"));
-    }
-    // Do after methodInvocation fix.
-    // If more than one fixes is made on a single line, the fixes must be applied from behind.
-    for (const { file, lineNum, start, end } of this._methodInvocations) {
-      const maybeSource = this._sources.get(file);
-      const source: string = maybeSource ?? (await readFile(file, "utf-8"));
-      const lines = source.split("\n");
-      lines[lineNum - 1] =
-        lines[lineNum - 1].slice(0, start - 1) +
-        "findElementMulti" +
-        lines[lineNum - 1].slice(end - 1);
-      this._sources.set(file, lines.join("\n"));
-    }
-  };
-
-  private writeFixHistory = async () => {
-    const content = await readFile(fixHistoryFile, "utf-8")
-      .then((content) => {
-        if (content === "" || content === undefined) {
-          return "[]";
-        } else {
-          return content;
-        }
-      })
-      .catch((e) => {
-        return "[]";
-      });
-    const json = JSON.parse(content);
-    this._locatorFixes.forEach((locatorFix: LocatorFix) => {
-      json.push(locatorFix);
-    });
-    await writeFile(fixHistoryFile, JSON.stringify(json), "utf-8");
-  };
-
-  private writeFixedSource = async () => {
-    this._sources.forEach(async (source, path) => {
-      const logger = Log4js.getLogger();
-      logger.debug(`
-  file: ${path}
-  source:`);
-      logger.debug(source);
-      const fileName = path.split("/").slice(-1);
-      await mkdir(fixedFileDir, { recursive: true });
-      await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
-    });
+    LocatorExtensions.push(locatorExtension);
+    MethodInvocations.push(methodInvocationCodeFragment);
   };
 
   private getBrokenLocatorCodeFragment = (

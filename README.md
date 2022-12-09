@@ -18,12 +18,13 @@ See [here](https://github.com/latteart-org/multi-locator/tree/main/example/tests
 
 ### Setup
 
-`enableMultiLocator()` extends `selenium-webdriver` as follows:
+`enableMultiLocator()` extends `selenium-webdriver` as follows:  
+Importing `recordFix` is also required.
 
 ```js
 // part of a test script with selenium
 const { Builder } = require("selenium-webdriver");
-const { enableMultiLocator } = require("multi-locator");
+const { enableMultiLocator, recordFix } = require("multi-locator");
 
 let driver = await new Builder().forBrowser("chrome").build();
 driver = enableMultiLocator(driver);
@@ -52,7 +53,8 @@ await driver
 ### Automatic Locator Repair
 
 If an application update has caused some locators to break, multiple locators can still be used to identify a web element as long as at least one of the locators is correct.
-MULOC can be used to record the fixes for the broken locators by calling `recordFix()` once before the end of the test.
+MULOC can be used to record the fixes for the broken locators by calling `recordFix()` once before finishing the tests.  
+When you use a testing framework, it is recommended to call it in a teardown method such as Jest's `afterAll()` or Mocha's `after()`.
 
 ```js
 await driver
@@ -63,7 +65,7 @@ await driver
     { name: "username_broken" } // broken
   )
   .sendKeys("tomsmith");
-await driver.recordFix(); // require
+await recordFix(); //required
 ```
 
 Run `npx muloc show fix <file name>` after executing the test.  
@@ -77,7 +79,7 @@ It adds as many of the available locators as possible to the argument.
 
 ```js
 await driver.findElement({ id: "password" }).sendKeys("SuperSecretPassword!");
-await driver.recordFix();
+await recordFix();
 ```
 
 After executing the test, running `npx muloc show fix <file name>` outputs:
@@ -91,7 +93,7 @@ await driver
     { xpath: "/html/body/div[2]/div/div/form/div[2]/div/input" }
   )
   .sendKeys("SuperSecretPassword!");
-await driver.recordFix();
+await recordFix();
 ```
 
 ### Automatic Locator Prioritization
@@ -104,7 +106,7 @@ Locator fix history is stored in `.multi-locator/fix_history.json`.
 
 ## for WebdriverIO
 
-It is almost the same as for Selenium WebDriver, but there are some differences in coding rule.  
+It is almost the same as for Selenium WebDriver, but there are some differences in coding rules.  
 First, you need to extend the `browser` or `driver` object.
 
 ```js
@@ -138,6 +140,11 @@ $(await browser.findElement({ id: "password" })).setValue(
 
 returns an extended driver so that the following functions can be available.
 
+- `recordFix()`
+
+Call this only once before finishing tests to record the modifications.  
+Repaired test scripts `.multi-locator/fixed/<file name>` and `fix_history.json` are generated.
+
 - `findElement({<locator type>: <locator value>})`
 
 collects information to extend the locator in addition to the ordinary `findElement` behavior.
@@ -150,11 +157,6 @@ If there is no config, this tries the locators sequentially, starting with the f
 - `findElementMultiStrict({<locator type>: <locator value>}, ...)`
 
 ignores the configured locator order and tries the locators from the beginning of the arguments.
-
-- `recordFix()`
-
-Call this only once before finishing tests to record the modifications.  
-Repaired test scripts `.multi-locator/fixed/<file name>` and `fix_history.json` are generated.
 
 # Commands
 
@@ -200,7 +202,9 @@ await element.sendKeys("SuperSecretPassword!");
 
 // not work
 const locatorValue = "password";
-await driver.findElement({ id: `${locatorValue}` }).sendKeys("SuperSecretPassword!");
+await driver
+  .findElement({ id: `${locatorValue}` })
+  .sendKeys("SuperSecretPassword!");
 
 // not work
 const locator = { id: "password" };

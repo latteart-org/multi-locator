@@ -1,11 +1,12 @@
-const { enableMultiLocator } = require("multi-locator");
+const { enableMultiLocator, recordFix } = require("multi-locator");
 
 describe("wdio sample", function () {
   beforeEach(() => {
     browser = enableMultiLocator(browser); //add
   });
-  this.afterEach(() => {
-    browser.recordFix();
+
+  after(() => {
+    recordFix();
   });
 
   it("fix locator sample", async () => {

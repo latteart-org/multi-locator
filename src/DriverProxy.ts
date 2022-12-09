@@ -1,4 +1,4 @@
-import { CodeFixer } from "./CodeFixer";
+import { CodeFixRegister } from "./CodeFixer";
 import { InvocationInfo } from "./MethodInvocationParser";
 import { FindElement, GetElementPromiseByDriver, TargetDriver } from "./Types";
 
@@ -6,7 +6,7 @@ type OverriddenFunctions<T extends TargetDriver> = {
   findElementMulti: (
     driver: T,
     invocationInfo: InvocationInfo,
-    codeFixer: CodeFixer<T>,
+    codeFixRegister: CodeFixRegister<T>,
     isApplyLocatorOrder: boolean,
     ...locators: unknown[]
   ) => GetElementPromiseByDriver<T>;
@@ -14,7 +14,7 @@ type OverriddenFunctions<T extends TargetDriver> = {
   findElement: (
     driver: T,
     invocationInfo: InvocationInfo,
-    codeFixer: CodeFixer<T>,
+    codeFixRegister: CodeFixRegister<T>,
     findElement: FindElement<T>,
     locator: unknown
   ) => GetElementPromiseByDriver<T>;
@@ -29,7 +29,7 @@ const createProxyHandler = <T extends TargetDriver>(
   driver: T,
   { findElement, findElementMulti }: OverriddenFunctions<T>
 ): ProxyHandler<T> => {
-  let codeFixer: CodeFixer<T> = new CodeFixer<T>(driver);
+  let codeFixRegister: CodeFixRegister<T> = new CodeFixRegister<T>(driver);
   return {
     get: (driver: T, prop, receiver) => {
       if (prop === "findElementMulti") {
@@ -38,7 +38,7 @@ const createProxyHandler = <T extends TargetDriver>(
           null,
           driver,
           invocationInfo,
-          codeFixer,
+          codeFixRegister,
           true
         );
       }
@@ -48,17 +48,15 @@ const createProxyHandler = <T extends TargetDriver>(
           null,
           driver,
           invocationInfo,
-          codeFixer,
+          codeFixRegister,
           false
         );
       }
       if (prop === "findElement") {
         const invocationInfo = getInvocationInfo();
-        return findElement.bind(null, driver, invocationInfo, codeFixer);
+        return findElement.bind(null, driver, invocationInfo, codeFixRegister);
       }
-      if (prop === "recordFix") {
-        return codeFixer.recordFix;
-      }
+
       return Reflect.get(driver, prop, receiver);
     },
   };

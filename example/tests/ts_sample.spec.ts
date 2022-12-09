@@ -1,7 +1,5 @@
 import { Builder } from "selenium-webdriver";
-import { enableMultiLocator } from "multi-locator";
-
-jest.setTimeout(100000);
+import { enableMultiLocator, recordFix } from "multi-locator";
 
 describe("ts-jest examples", () => {
   let driver: any;
@@ -12,8 +10,11 @@ describe("ts-jest examples", () => {
   });
 
   afterEach(async () => {
-    await driver.recordFix(); // add
     await driver.quit();
+  });
+
+  afterAll(async () => {
+    await recordFix(); // add
   });
 
   it("Fix locator sample", async () => {

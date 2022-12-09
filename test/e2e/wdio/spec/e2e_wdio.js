@@ -1,6 +1,6 @@
 const LoginPage = require("../pageobjects/login.page");
 const SecurePage = require("../pageobjects/secure.page");
-const { enableMultiLocator } = require("../../../../dist/src/Api");
+const { enableMultiLocator, recordFix } = require("../../../../dist/src/Api");
 
 describe("e2e test with wdio", () => {
   before(async () => {
@@ -9,7 +9,7 @@ describe("e2e test with wdio", () => {
   });
 
   after(async () => {
-    await driver.recordFix();
+    await recordFix();
   });
 
   it("fix test script using page object", async () => {

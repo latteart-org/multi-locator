@@ -1,5 +1,5 @@
 const { Builder } = require("selenium-webdriver");
-const { enableMultiLocator } = require("multi-locator");
+const { enableMultiLocator, recordFix } = require("multi-locator");
 const { mkdir, writeFile } = require("fs/promises");
 
 jest.setTimeout(100000);
@@ -14,7 +14,10 @@ describe("jest examples", () => {
 
   afterEach(async () => {
     await driver.quit();
-    await driver.recordFix(); // add
+  });
+
+  afterAll(async () => {
+    await recordFix();
   });
 
   it("Fix locator sample", async () => {

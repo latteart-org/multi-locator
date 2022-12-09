@@ -1,5 +1,5 @@
 import { ByHash, WebElementPromise } from "selenium-webdriver";
-import { CodeFixer } from "../CodeFixer";
+import { CodeFixRegister } from "../CodeFixer";
 import { createProxy } from "../DriverProxy";
 import { InvocationInfo } from "../MethodInvocationParser";
 import {
@@ -36,7 +36,7 @@ const locatorCheck: LocatorCheck<SeleniumDriver> = {
 const findElementMulti = (
   driver: SeleniumDriver,
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<SeleniumDriver>,
+  codeFixRegister: CodeFixRegister<SeleniumDriver>,
   isApplyLocatorOrder: boolean,
   ...locators: unknown[]
 ): WebElementPromise => {
@@ -44,7 +44,7 @@ const findElementMulti = (
     driver,
     findElementAndRegisterLocatorFix(
       invocationInfo,
-      codeFixer,
+      codeFixRegister,
       locators,
       createFindElement(driver),
       locatorCheck,
@@ -56,14 +56,14 @@ const findElementMulti = (
 const findElement = (
   driver: SeleniumDriver,
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<SeleniumDriver>,
+  codeFixRegister: CodeFixRegister<SeleniumDriver>,
   maybeLocator: unknown
 ): WebElementPromise => {
   return new WebElementPromise(
     driver,
     findElementAndRegisterLocatorExtension(
       invocationInfo,
-      codeFixer,
+      codeFixRegister,
       createFindElement(driver),
       maybeLocator
     )

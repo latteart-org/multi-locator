@@ -1,4 +1,4 @@
-import { CodeFixer } from "../CodeFixer";
+import { CodeFixRegister } from "../CodeFixer";
 import { createProxy } from "../DriverProxy";
 import { InvocationInfo } from "../MethodInvocationParser";
 import {
@@ -31,13 +31,13 @@ const locatorCheck: LocatorCheck<WdioDriver> = {
 const findElementMulti = async (
   driver: WdioDriver,
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<WdioDriver>,
+  codeFixRegister: CodeFixRegister<WdioDriver>,
   isApplyLocatorOrder: boolean,
   ...locators: unknown[]
 ): Promise<WdioElement> => {
   return findElementAndRegisterLocatorFix(
     invocationInfo,
-    codeFixer,
+    codeFixRegister,
     locators,
     createFindElement(driver),
     locatorCheck,
@@ -48,12 +48,12 @@ const findElementMulti = async (
 const findElement = (
   driver: WdioDriver,
   invocationInfo: InvocationInfo,
-  codeFixer: CodeFixer<WdioDriver>,
+  codeFixRegister: CodeFixRegister<WdioDriver>,
   maybeLocator: unknown
 ) =>
   findElementAndRegisterLocatorExtension(
     invocationInfo,
-    codeFixer,
+    codeFixRegister,
     createFindElement(driver),
     maybeLocator
   );

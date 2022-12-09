@@ -3,10 +3,7 @@ import { wdioProxy } from "./proxy/WdioProxy";
 import { TargetDriver } from "./Types";
 import { isSelenium } from "./WebDriverUtil";
 import Log4js from "log4js";
-
-export const enableMultiLocator = (driver: TargetDriver): TargetDriver => {
-  return isSelenium(driver) ? seleniumProxy(driver) : wdioProxy(driver);
-};
+import { CodeFixWriter } from "./CodeFixer";
 
 Log4js.configure({
   appenders: {
@@ -21,3 +18,9 @@ Log4js.configure({
     },
   },
 });
+
+export const enableMultiLocator = (driver: TargetDriver): TargetDriver => {
+  return isSelenium(driver) ? seleniumProxy(driver) : wdioProxy(driver);
+};
+
+export const recordFix = (): Promise<void> => new CodeFixWriter().recordFix();
