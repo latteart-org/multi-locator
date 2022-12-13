@@ -114,8 +114,8 @@ browser = enableMultiLocator(browser);
 await browser.url("https://the-internet.herokuapp.com/login");
 ```
 
-Unlike in Selenium, it is not possible to chain `setValue()` or `click()` with the value returned by `findElementMulti` without resolving `Promise`.  
-You must resolve the `Promise` or enclose it in `$()` before chaining the method.
+Unlike in Selenium, it is not possible to chain `setValue()`, `click()`, and other methods with the value returned by `findElementMulti` without resolving `Promise` when using WebdriverIO.  
+You must resolve the `Promise` before chaining the methods.
 
 ```js
 // cannot chain methods without await
@@ -128,10 +128,25 @@ await (
   )
 ).setValue("tomsmith");
 
-// or use $ to avoid outer await
-$(await browser.findElement({ id: "password" })).setValue(
-  "SuperSecretPassword!"
-);
+// not work
+await browser
+  .findElementMulti(
+    { id: "username_broken" },
+    { xpath: '//*[@id="username_broken"]' },
+    { css: "#username" },
+    { name: "username_broken" }
+  )
+  .setValue("tomsmith");
+
+// method chain using $
+await $(
+  await browser.findElementMulti(
+    { id: "username_broken" },
+    { xpath: '//*[@id="username_broken"]' },
+    { css: "#username" },
+    { name: "username_broken" }
+  )
+).$(<locator>).$(<locator>).setValue("tomsmith");
 ```
 
 # APIs
