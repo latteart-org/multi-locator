@@ -1,8 +1,8 @@
-const { Options } = require("selenium-webdriver/chrome");
+const { Options, ServiceBuilder } = require("selenium-webdriver/chrome");
 const { Builder } = require("selenium-webdriver");
 const { enableMultiLocator, recordFix } = require("../../dist/src/Api");
-const { writeFile, readFile } = require("fs/promises");
-const { locatorOrderFile } = require("../../dist/src/Constant");
+const { writeFile, readFile, mkdir } = require("fs/promises");
+const { locatorOrderFile } = require("../../dist/src/FilePathSetting");
 
 jest.setTimeout(100000);
 
@@ -15,9 +15,11 @@ async function init() {
   driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(options)
+    .setChromeService(new ServiceBuilder(require("chromedriver").path))
     .build();
   driver = enableMultiLocator(driver);
 
+  await mkdir("./.multi-locator", { recursive: true });
   await writeFile(locatorOrderFile, "name\ninnerText\ncss\nxpath\nid");
   return driver;
 }

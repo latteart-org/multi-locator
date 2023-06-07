@@ -4,7 +4,6 @@ dist
 mocha
 coverage
 test_experiment
-wdio.conf.js
 .DS_Store
 .multi-locator
 .babelrc

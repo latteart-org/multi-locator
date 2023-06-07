@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import { basename } from "path";
 import Log4js from "log4js";
 import { fixedFileDir, fixHistoryFile } from "./FilePathSetting";
 import { CodeFragment, LocatorCodeFragment } from "./MethodInvocationParser";
@@ -201,7 +202,7 @@ export class CodeFixWriter {
   file: ${filePath}
   source:`);
       logger.debug(source);
-      const fileName = filePath.split("/").slice(-1);
+      const fileName = basename(filePath);
       await mkdir(fixedFileDir, { recursive: true });
       await writeFile(`${fixedFileDir}/${fileName}`, source, "utf-8");
     });

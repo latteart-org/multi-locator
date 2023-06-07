@@ -1,4 +1,4 @@
-import fs, { readFile, unlink } from "fs/promises";
+import fs, { mkdir, readFile, unlink } from "fs/promises";
 import { readLocatorOrder, writeLocatorOrder } from "../../src/LocatorOrder";
 
 // import Rewire from "rewire";
@@ -44,6 +44,7 @@ describe("Test LocatorOrder", () => {
   }
 ]`
     );
+    await mkdir("test/resource/tmp", { recursive: true });
     await writeLocatorOrder(locatorOrderFile);
     readFileMock.mockRestore();
 
