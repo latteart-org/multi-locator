@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node_modules/jest/bin/jest.js",
+    "test": "node node_modules/jest/bin/jest.js",
     "wdio": "wdio run wdio.conf.js"
   },
   "author": "",
@@ -16,11 +16,12 @@
   },
   "devDependencies": {
     "@wdio/cli": "^7.27.0",
-    "@wdio/local-runner": "^7.27.0",
-    "@wdio/mocha-framework": "^7.26.0",
-    "@wdio/spec-reporter": "^7.26.0",
+    "@wdio/local-runner": "^7.32.4",
+    "@wdio/mocha-framework": "^7.30.2",
+    "@wdio/spec-reporter": "^7.31.1",
     "chromedriver": "latest",
-    "wdio-chromedriver-service": "^8.0.0",
-    "webdriverio": "^7.27.0"
+    "wdio-chromedriver-service": "^8.1.1",
+    "webdriverio": "^7.27.0",
+    "multi-locator": "latteart-org/multi-locator"
   }
 }
