@@ -328,7 +328,8 @@ export class CodeFixRegister<T extends TargetDriver> {
       }
       case "innerText":
       case "partialInnerText": {
-        const value = await element.getText();
+        const tagname = await element.getTagName();
+        const value = tagname.toLowerCase() === "select" ? "" : await element.getText();
         return falsyToUndef(value);
       }
       case "css":

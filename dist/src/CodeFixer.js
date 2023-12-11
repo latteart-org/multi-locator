@@ -625,9 +625,9 @@ var CodeFixRegister = /** @class */ (function () {
          * @returns
          */
         this.getLocatorValue = function (element, type) { return __awaiter(_this, void 0, void 0, function () {
-            var falsyToUndef, _a, value, value, value, unreachable;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var falsyToUndef, _a, value, value, tagname, value, _b, unreachable;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         falsyToUndef = function (value) {
                             return value === "" || value === null ? undefined : value;
@@ -641,24 +641,33 @@ var CodeFixRegister = /** @class */ (function () {
                             case "partialLinkText": return [3 /*break*/, 4];
                             case "innerText": return [3 /*break*/, 6];
                             case "partialInnerText": return [3 /*break*/, 6];
-                            case "css": return [3 /*break*/, 8];
+                            case "css": return [3 /*break*/, 11];
                         }
-                        return [3 /*break*/, 9];
+                        return [3 /*break*/, 12];
                     case 1: return [2 /*return*/, (0, WebDriverUtil_1.getXpath)(this.driver, element)];
                     case 2: return [4 /*yield*/, element.getAttribute(type)];
                     case 3:
-                        value = _b.sent();
+                        value = _c.sent();
                         return [2 /*return*/, falsyToUndef(value)];
                     case 4: return [4 /*yield*/, element.getAttribute("text")];
                     case 5:
-                        value = _b.sent();
+                        value = _c.sent();
                         return [2 /*return*/, falsyToUndef(value)];
-                    case 6: return [4 /*yield*/, element.getText()];
+                    case 6: return [4 /*yield*/, element.getTagName()];
                     case 7:
-                        value = _b.sent();
-                        return [2 /*return*/, falsyToUndef(value)];
-                    case 8: return [2 /*return*/, (0, WebDriverUtil_1.getCssSelector)(this.driver, element)];
+                        tagname = _c.sent();
+                        if (!(tagname.toLowerCase() === "select")) return [3 /*break*/, 8];
+                        _b = "";
+                        return [3 /*break*/, 10];
+                    case 8: return [4 /*yield*/, element.getText()];
                     case 9:
+                        _b = _c.sent();
+                        _c.label = 10;
+                    case 10:
+                        value = _b;
+                        return [2 /*return*/, falsyToUndef(value)];
+                    case 11: return [2 /*return*/, (0, WebDriverUtil_1.getCssSelector)(this.driver, element)];
+                    case 12:
                         unreachable = type;
                         return [2 /*return*/, unreachable];
                 }
