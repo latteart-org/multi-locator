@@ -31,14 +31,14 @@ export type GetElementByDriver<T extends TargetDriver> =
 export const TargetLocatorTypes = [
   "id",
   "name",
-  "xpath",
   "linkText",
   "partialLinkText",
   "innerText",
   "partialInnerText",
   "css",
+  "xpath",
 ] as const;
 export type TargetLocator = {
-  type: typeof TargetLocatorTypes[number];
+  type: (typeof TargetLocatorTypes)[number];
   value: string;
 };
