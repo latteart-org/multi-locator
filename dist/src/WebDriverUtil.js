@@ -1,125 +1,69 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCssSelector = exports.getXpath = exports.isSelenium = void 0;
-var selenium_webdriver_1 = require("selenium-webdriver");
-var isSelenium = function (driver) { return driver instanceof selenium_webdriver_1.WebDriver; };
+const selenium_webdriver_1 = require("selenium-webdriver");
+const isSelenium = (driver) => driver instanceof selenium_webdriver_1.WebDriver;
 exports.isSelenium = isSelenium;
-var getXpath = function (driver, element) { return __awaiter(void 0, void 0, void 0, function () {
+const getXpath = async (driver, element) => {
     function getXpathInject() {
-        var getXpathRec = function (element) {
+        const getXpathRec = (element) => {
             if (element && element.parentNode) {
-                var xpath_1 = getXpathRec(element.parentNode) + "/" + element.tagName;
-                var s = [];
-                for (var i = 0; i < element.parentNode.childNodes.length; i++) {
-                    var e = element.parentNode.childNodes[i];
+                let xpath = getXpathRec(element.parentNode) + "/" + element.tagName;
+                const s = [];
+                for (let i = 0; i < element.parentNode.childNodes.length; i++) {
+                    const e = element.parentNode.childNodes[i];
                     if (e.tagName == element.tagName) {
                         s.push(e);
                     }
                 }
                 if (1 < s.length) {
-                    for (var i = 0; i < s.length; i++) {
+                    for (let i = 0; i < s.length; i++) {
                         if (s[i] === element) {
-                            xpath_1 += "[" + (i + 1) + "]";
+                            xpath += "[" + (i + 1) + "]";
                             break;
                         }
                     }
                 }
-                return xpath_1.toLowerCase();
+                return xpath.toLowerCase();
             }
             else {
                 return "";
             }
         };
-        var callback = arguments[arguments.length - 1];
-        var element = arguments[0];
-        var xpath = getXpathRec(element);
+        const callback = arguments[arguments.length - 1];
+        const element = arguments[0];
+        const xpath = getXpathRec(element);
         callback(xpath);
     }
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (!(0, exports.isSelenium)(driver)) return [3 /*break*/, 2];
-                return [4 /*yield*/, driver.executeAsyncScript(getXpathInject, element)];
-            case 1: return [2 /*return*/, _a.sent()];
-            case 2: return [4 /*yield*/, driver.executeAsync(getXpathInject, element)];
-            case 3: return [2 /*return*/, _a.sent()];
-        }
-    });
-}); };
+    if ((0, exports.isSelenium)(driver)) {
+        return await driver.executeAsyncScript(getXpathInject, element);
+    }
+    else {
+        return await driver.executeAsync(getXpathInject, element);
+    }
+};
 exports.getXpath = getXpath;
 /**
  * @param driver
  * @param element
  * @returns Selector by the product set of all classes in this element. Return null if class doesn't exist.
  */
-var getCssSelector = function (driver, element) { return __awaiter(void 0, void 0, void 0, function () {
-    var classString, classes, cssSelector, elements, _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0: return [4 /*yield*/, element.getAttribute("class")];
-            case 1:
-                classString = _b.sent();
-                if (classString === null || classString === undefined || classString === "") {
-                    return [2 /*return*/, undefined];
-                }
-                classes = classString.split(/\s+/);
-                cssSelector = "." + classes.join(".");
-                if (!(0, exports.isSelenium)(driver)) return [3 /*break*/, 3];
-                return [4 /*yield*/, driver.findElements(selenium_webdriver_1.By.css(cssSelector))];
-            case 2:
-                _a = _b.sent();
-                return [3 /*break*/, 5];
-            case 3: return [4 /*yield*/, driver.$$(cssSelector)];
-            case 4:
-                _a = _b.sent();
-                _b.label = 5;
-            case 5:
-                elements = _a;
-                if (elements.length === 1) {
-                    return [2 /*return*/, cssSelector];
-                }
-                else {
-                    return [2 /*return*/, undefined];
-                }
-                return [2 /*return*/];
-        }
-    });
-}); };
+const getCssSelector = async (driver, element) => {
+    const classString = await element.getAttribute("class");
+    if (classString === null || classString === undefined || classString === "") {
+        return undefined;
+    }
+    const classes = classString.split(/\s+/);
+    const cssSelector = "." + classes.join(".");
+    const elements = (0, exports.isSelenium)(driver)
+        ? await driver.findElements(selenium_webdriver_1.By.css(cssSelector))
+        : await driver.$$(cssSelector);
+    if (elements.length === 1) {
+        return cssSelector;
+    }
+    else {
+        return undefined;
+    }
+};
 exports.getCssSelector = getCssSelector;
 //# sourceMappingURL=WebDriverUtil.js.map

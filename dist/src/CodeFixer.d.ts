@@ -29,7 +29,7 @@ export declare class CodeFixRegister<T extends TargetDriver> {
      * @returns
      */
     private compareLocatorFix;
-    registerLocatorExtension: (element: GetElementByDriver<T>, argumentsCodeFragment: CodeFragment, methodInvocationCodeFragment: CodeFragment) => Promise<void>;
+    registerLocatorExtension: (originalLocator: TargetLocator, element: GetElementByDriver<T>, argumentsCodeFragment: CodeFragment, methodInvocationCodeFragment: CodeFragment) => Promise<void>;
     private getBrokenLocatorCodeFragment;
     /**
      * Needs improvement as it does not consider uniqueness of elements

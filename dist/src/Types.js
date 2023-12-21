@@ -4,11 +4,11 @@ exports.TargetLocatorTypes = void 0;
 exports.TargetLocatorTypes = [
     "id",
     "name",
-    "xpath",
     "linkText",
     "partialLinkText",
     "innerText",
     "partialInnerText",
     "css",
+    "xpath",
 ];
 //# sourceMappingURL=Types.js.map

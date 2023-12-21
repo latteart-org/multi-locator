@@ -84,9 +84,10 @@ export const findElementAndRegisterLocatorExtension = async <
   const { argumentsCodeFragment, methodInvocationCodeFragment } =
     await getCodeFragments(invocationInfo);
   await codeFixRegister.registerLocatorExtension(
+    locator,
     correctElement,
     argumentsCodeFragment,
-    methodInvocationCodeFragment
+    methodInvocationCodeFragment,
   );
   return correctElement;
 };
