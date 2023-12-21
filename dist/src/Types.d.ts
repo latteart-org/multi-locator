@@ -10,8 +10,8 @@ export declare type GetRawElementByDriver<T> = T extends SeleniumDriver ? Seleni
 export declare type GetElementPromiseByDriver<T extends TargetDriver> = Promise<GetRawElementByDriver<T>>;
 export declare type GetAwaitedElementByDriver<T extends TargetDriver> = Awaited<GetElementPromiseByDriver<T>>;
 export declare type GetElementByDriver<T extends TargetDriver> = GetRawElementByDriver<T> | GetAwaitedElementByDriver<T>;
-export declare const TargetLocatorTypes: readonly ["id", "name", "xpath", "linkText", "partialLinkText", "innerText", "partialInnerText", "css"];
+export declare const TargetLocatorTypes: readonly ["id", "name", "linkText", "partialLinkText", "innerText", "partialInnerText", "css", "xpath"];
 export declare type TargetLocator = {
-    type: typeof TargetLocatorTypes[number];
+    type: (typeof TargetLocatorTypes)[number];
     value: string;
 };

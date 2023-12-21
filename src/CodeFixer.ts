@@ -262,9 +262,10 @@ export class CodeFixRegister<T extends TargetDriver> {
   };
 
   public registerLocatorExtension = async (
+    originalLocator: TargetLocator,
     element: GetElementByDriver<T>,
     argumentsCodeFragment: CodeFragment,
-    methodInvocationCodeFragment: CodeFragment
+    methodInvocationCodeFragment: CodeFragment,
   ) => {
     let newArgumentsString = "";
     for (const type of TargetLocatorTypes) {
@@ -272,9 +273,11 @@ export class CodeFixRegister<T extends TargetDriver> {
       if (["partialInnerText", "partialLinkText"].includes(type)) {
         continue;
       }
-      const value = await this.getLocatorValue(element, type);
+      const value = originalLocator.type === type
+        ? originalLocator.value
+        : await this.getLocatorValue(element, type);
       if (value !== undefined) {
-        newArgumentsString += `{ ${type}: "${value}" }, `;
+        newArgumentsString += `{ ${type}: "${value.replaceAll('"', "'")}" }, `;
       }
     }
     const locatorExtension = {
