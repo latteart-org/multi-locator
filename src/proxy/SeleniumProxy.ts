@@ -70,7 +70,7 @@ const findElement = (
   );
 };
 
-const toSeleniumCompatible = (locator: TargetLocator): ByHash => {
+export const toSeleniumCompatible = (locator: TargetLocator): ByHash => {
   switch (locator.type) {
     case "id":
     case "name":

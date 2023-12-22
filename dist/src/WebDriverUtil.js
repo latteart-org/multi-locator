@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCssSelector = exports.getXpath = exports.isSelenium = void 0;
+exports.isUniqueLocator = exports.getCssSelector = exports.getXpath = exports.isSelenium = void 0;
 const selenium_webdriver_1 = require("selenium-webdriver");
+const SeleniumProxy_1 = require("./proxy/SeleniumProxy");
+const WdioProxy_1 = require("./proxy/WdioProxy");
 const isSelenium = (driver) => driver instanceof selenium_webdriver_1.WebDriver;
 exports.isSelenium = isSelenium;
 const getXpath = async (driver, element) => {
@@ -66,4 +68,11 @@ const getCssSelector = async (driver, element) => {
     }
 };
 exports.getCssSelector = getCssSelector;
+const isUniqueLocator = async (driver, locator) => {
+    const elements = (0, exports.isSelenium)(driver)
+        ? await driver.findElements((0, SeleniumProxy_1.toSeleniumCompatible)(locator))
+        : await driver.$$((0, WdioProxy_1.toWdioCompatible)(locator));
+    return elements.length === 1;
+};
+exports.isUniqueLocator = isUniqueLocator;
 //# sourceMappingURL=WebDriverUtil.js.map

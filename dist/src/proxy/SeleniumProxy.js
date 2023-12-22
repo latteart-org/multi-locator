@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.seleniumProxy = void 0;
+exports.toSeleniumCompatible = exports.seleniumProxy = void 0;
 const selenium_webdriver_1 = require("selenium-webdriver");
 const DriverProxy_1 = require("../DriverProxy");
 const MultiLocator_1 = require("../MultiLocator");
 const seleniumProxy = (driver) => (0, DriverProxy_1.createProxy)(driver, { findElement, findElementMulti });
 exports.seleniumProxy = seleniumProxy;
-const createFindElement = (driver) => (locator) => driver.findElement(toSeleniumCompatible(locator));
+const createFindElement = (driver) => (locator) => driver.findElement((0, exports.toSeleniumCompatible)(locator));
 const locatorCheck = {
     isFound: (result) => result.status === "fulfilled",
     isNotFound: (result) => result.status === "rejected" &&
@@ -36,4 +36,5 @@ const toSeleniumCompatible = (locator) => {
             return unreachable;
     }
 };
+exports.toSeleniumCompatible = toSeleniumCompatible;
 //# sourceMappingURL=SeleniumProxy.js.map

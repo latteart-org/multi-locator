@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.wdioProxy = void 0;
+exports.toWdioCompatible = exports.wdioProxy = void 0;
 const DriverProxy_1 = require("../DriverProxy");
 const MultiLocator_1 = require("../MultiLocator");
 const wdioProxy = (driver) => (0, DriverProxy_1.createProxy)(driver, { findElement, findElementMulti });
 exports.wdioProxy = wdioProxy;
-const createFindElement = (driver) => (locator) => driver.$(toWdioCompatible(locator));
+const createFindElement = (driver) => (locator) => driver.$((0, exports.toWdioCompatible)(locator));
 const locatorCheck = {
     isFound: (result) => 
     // fulfilled status doesn't always mean element was successfully specified.
@@ -40,4 +40,5 @@ const toWdioCompatible = (locator) => {
             return unreachable;
     }
 };
+exports.toWdioCompatible = toWdioCompatible;
 //# sourceMappingURL=WdioProxy.js.map

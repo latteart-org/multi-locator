@@ -244,31 +244,40 @@ class CodeFixRegister {
      */
     getLocatorValue = async (element, type) => {
         const falsyToUndef = (value) => value === "" || value === null ? undefined : value;
-        switch (type) {
-            case "xpath":
-                return (0, WebDriverUtil_1.getXpath)(this.driver, element);
-            case "id":
-            case "name": {
-                const value = await element.getAttribute(type);
-                return falsyToUndef(value);
+        const locatorValue = await (async () => {
+            switch (type) {
+                case "xpath":
+                    return (0, WebDriverUtil_1.getXpath)(this.driver, element);
+                case "id":
+                case "name": {
+                    const value = await element.getAttribute(type);
+                    return falsyToUndef(value);
+                }
+                case "linkText":
+                case "partialLinkText": {
+                    const value = await element.getAttribute("text");
+                    return falsyToUndef(value);
+                }
+                case "innerText":
+                case "partialInnerText": {
+                    const tagname = await element.getTagName();
+                    const value = tagname.toLowerCase() === "select" ? "" : await element.getText();
+                    return falsyToUndef(value);
+                }
+                case "css":
+                    return (0, WebDriverUtil_1.getCssSelector)(this.driver, element);
+                default:
+                    const unreachable = type;
+                    return unreachable;
             }
-            case "linkText":
-            case "partialLinkText": {
-                const value = await element.getAttribute("text");
-                return falsyToUndef(value);
-            }
-            case "innerText":
-            case "partialInnerText": {
-                const tagname = await element.getTagName();
-                const value = tagname.toLowerCase() === "select" ? "" : await element.getText();
-                return falsyToUndef(value);
-            }
-            case "css":
-                return (0, WebDriverUtil_1.getCssSelector)(this.driver, element);
-            default:
-                const unreachable = type;
-                return unreachable;
+        })();
+        if (locatorValue === undefined) {
+            return;
         }
+        if (!await (0, WebDriverUtil_1.isUniqueLocator)(this.driver, { type, value: locatorValue })) {
+            return;
+        }
+        return locatorValue;
     };
 }
 exports.CodeFixRegister = CodeFixRegister;

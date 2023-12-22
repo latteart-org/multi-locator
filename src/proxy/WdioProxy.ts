@@ -58,7 +58,7 @@ const findElement = (
     maybeLocator
   );
 
-const toWdioCompatible = (locator: TargetLocator): string => {
+export const toWdioCompatible = (locator: TargetLocator): string => {
   switch (locator.type) {
     case "id":
       return `//*[@id="${locator.value}"]`;
