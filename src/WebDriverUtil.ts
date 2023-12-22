@@ -1,8 +1,11 @@
 import { By, WebDriver } from "selenium-webdriver";
+import { toSeleniumCompatible } from "./proxy/SeleniumProxy";
+import { toWdioCompatible } from "./proxy/WdioProxy";
 import {
   GetElementByDriver,
   SeleniumDriver,
   TargetDriver,
+  TargetLocator,
   WdioDriver,
 } from "./Types";
 
@@ -77,4 +80,15 @@ export const getCssSelector = async <T extends TargetDriver>(
   } else {
     return undefined;
   }
+};
+
+export const isUniqueLocator = async (
+  driver: TargetDriver,
+  locator: TargetLocator
+): Promise<boolean> => {
+  const elements = isSelenium(driver)
+    ? await driver.findElements(toSeleniumCompatible(locator))
+    : await driver.$$(toWdioCompatible(locator));
+
+  return elements.length === 1;
 };

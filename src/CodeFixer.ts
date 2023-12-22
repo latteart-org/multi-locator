@@ -10,7 +10,7 @@ import {
   TargetLocator,
   TargetLocatorTypes,
 } from "./Types";
-import { getCssSelector, getXpath } from "./WebDriverUtil";
+import { isUniqueLocator, getCssSelector, getXpath } from "./WebDriverUtil";
 
 export type LocatorFix = {
   locatorCodeFragment: LocatorCodeFragment;
@@ -316,31 +316,43 @@ export class CodeFixRegister<T extends TargetDriver> {
     const falsyToUndef = (value: string) =>
       value === "" || value === null ? undefined : value;
 
-    switch (type) {
-      case "xpath":
-        return getXpath(this.driver, element);
-      case "id":
-      case "name": {
-        const value = await element.getAttribute(type);
-        return falsyToUndef(value);
+    const locatorValue = await (async () => {
+      switch (type) {
+        case "xpath":
+          return getXpath(this.driver, element);
+        case "id":
+        case "name": {
+          const value = await element.getAttribute(type);
+          return falsyToUndef(value);
+        }
+        case "linkText":
+        case "partialLinkText": {
+          const value = await element.getAttribute("text");
+          return falsyToUndef(value);
+        }
+        case "innerText":
+        case "partialInnerText": {
+          const tagname = await element.getTagName();
+          const value = tagname.toLowerCase() === "select" ? "" : await element.getText();
+          return falsyToUndef(value);
+        }
+        case "css":
+          return getCssSelector(this.driver, element);
+        default:
+          const unreachable: never = type;
+          return unreachable;
       }
-      case "linkText":
-      case "partialLinkText": {
-        const value = await element.getAttribute("text");
-        return falsyToUndef(value);
-      }
-      case "innerText":
-      case "partialInnerText": {
-        const tagname = await element.getTagName();
-        const value = tagname.toLowerCase() === "select" ? "" : await element.getText();
-        return falsyToUndef(value);
-      }
-      case "css":
-        return getCssSelector(this.driver, element);
-      default:
-        const unreachable: never = type;
-        return unreachable;
+    })();
+
+    if (locatorValue === undefined) {
+      return;
     }
+
+    if (!await isUniqueLocator(this.driver, { type, value: locatorValue })) {
+      return;
+    }
+
+    return locatorValue;
   };
 }
 
