@@ -274,6 +274,9 @@ class CodeFixRegister {
         if (locatorValue === undefined) {
             return;
         }
+        if (locatorValue.trim().length === 0) {
+            return;
+        }
         if (!await (0, WebDriverUtil_1.isUniqueLocator)(this.driver, { type, value: locatorValue })) {
             return;
         }
