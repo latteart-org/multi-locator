@@ -348,6 +348,10 @@ export class CodeFixRegister<T extends TargetDriver> {
       return;
     }
 
+    if (locatorValue.trim().length === 0) {
+      return;
+    }
+
     if (!await isUniqueLocator(this.driver, { type, value: locatorValue })) {
       return;
     }
