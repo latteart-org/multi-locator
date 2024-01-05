@@ -54,7 +54,9 @@ const createProxyHandler = <T extends TargetDriver>(
       }
       if (prop === "findElement") {
         const invocationInfo = getInvocationInfo();
-        return findElement.bind(null, driver, invocationInfo, codeFixRegister);
+        if (!invocationInfo.file.includes("node_modules")) {
+          return findElement.bind(null, driver, invocationInfo, codeFixRegister);
+        }
       }
 
       return Reflect.get(driver, prop, receiver);
